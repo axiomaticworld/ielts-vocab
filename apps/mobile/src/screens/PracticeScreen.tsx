@@ -236,23 +236,27 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
   const chapterLabel = mode === 'errors' ? '错词队列' : selectedChapter?.title || '全书'
 
   return (
-    <>
+    <View style={styles.practiceRoot}>
+      {error || speechState.error || loading ? (
+        <View pointerEvents="none" style={styles.practiceStatusOverlay}>
+          <StatusText error={error || speechState.error} loading={loading} />
+        </View>
+      ) : null}
       <ScreenScroll hideHeader title="练习">
-        <StatusText error={error || speechState.error} loading={loading} />
         {!entry ? (
           <PracticeEntryPanel onOpen={item => void openEntry(item)} />
         ) : (
           <>
             <View style={styles.practiceStatusBar}>
-              <Pressable accessibilityRole="button" onPress={() => setSheet('scope')} style={styles.statusSegment}>
+              <Pressable accessibilityLabel="切换练习词书" accessibilityRole="button" onPress={() => setSheet('scope')} style={styles.statusSegment} testID="practice.scope.book">
                 <Text style={styles.statusLabel}>词书</Text>
                 <Text numberOfLines={1} style={styles.statusValue}>{selectedBook?.title || '选择词书'}</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" onPress={() => setSheet('scope')} style={styles.statusSegment}>
+              <Pressable accessibilityLabel="切换练习章节" accessibilityRole="button" onPress={() => setSheet('scope')} style={styles.statusSegment} testID="practice.scope.chapter">
                 <Text style={styles.statusLabel}>章节</Text>
                 <Text numberOfLines={1} style={styles.statusValue}>{chapterLabel}</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" onPress={() => setSheet('mode')} style={styles.statusSegment}>
+              <Pressable accessibilityLabel="切换练习模式" accessibilityRole="button" onPress={() => setSheet('mode')} style={styles.statusSegment} testID="practice.mode.switch">
                 <Text style={styles.statusLabel}>模式</Text>
                 <Text numberOfLines={1} style={styles.statusValue}>{entryLabel(entry, mode)}</Text>
               </Pressable>
@@ -286,11 +290,11 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                 ) : null}
                 {mode === 'quickmemory' ? (
                   <View style={styles.answerRow}>
-                    <Pressable style={[styles.answerButton, styles.confirmButton]} onPress={() => void submit('known')}>
+                    <Pressable accessibilityLabel="认识" accessibilityRole="button" style={[styles.answerButton, styles.confirmButton]} onPress={() => void submit('known')} testID="practice.quickmemory.known">
                       <CheckCircle2 color={theme.colors.success} size={18} />
                       <Text style={styles.answerButtonText}>认识</Text>
                     </Pressable>
-                    <Pressable style={[styles.answerButton, styles.rejectButton]} onPress={() => void submit('unknown')}>
+                    <Pressable accessibilityLabel="不认识" accessibilityRole="button" style={[styles.answerButton, styles.rejectButton]} onPress={() => void submit('unknown')} testID="practice.quickmemory.unknown">
                       <XCircle color={theme.colors.danger} size={18} />
                       <Text style={styles.answerButtonText}>不认识</Text>
                     </Pressable>
@@ -298,7 +302,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                 ) : mode === 'listening' ? (
                   <View style={styles.choiceWrap}>
                     {optionsForWord.map(option => (
-                      <Pressable key={option} style={styles.choiceButton} onPress={() => void submit(option)}>
+                      <Pressable key={option} accessibilityLabel={`选择答案-${option}`} accessibilityRole="button" style={styles.choiceButton} onPress={() => void submit(option)} testID="practice.choice">
                         <Text style={styles.choiceText}>{option}</Text>
                       </Pressable>
                     ))}
@@ -307,8 +311,8 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                   <PrimaryButton label="下一词" onPress={() => void submit('played')} />
                 ) : mode !== 'follow' ? (
                   <>
-                    <Field value={answer} onChangeText={setAnswer} placeholder="输入答案" />
-                    <PrimaryButton label="提交" onPress={() => void submit()} />
+                    <Field value={answer} onChangeText={setAnswer} placeholder="输入答案" testID="practice.answer" />
+                    <PrimaryButton label="提交" onPress={() => void submit()} testID="practice.submit" />
                   </>
                 ) : (
                   <PrimaryButton label="跟读完成，下一词" onPress={() => void submit('followed')} />
@@ -348,11 +352,11 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
               <>
                 <Text style={styles.sheetTitle}>切换练习模式</Text>
                 <Text style={styles.sheetSubtitle}>沿用当前范围，切换后直接重新出题。</Text>
-                <ScrollView keyboardShouldPersistTaps="handled" style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
+                <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
                   {MODES.map(item => {
                     const active = item === mode
                     return (
-                      <Pressable key={item} accessibilityRole="button" onPress={() => void chooseMode(item)} style={[styles.sheetRow, active ? styles.sheetRowActive : null]}>
+                      <Pressable key={item} accessibilityLabel={`练习模式-${PRACTICE_MODE_LABELS[item]}`} accessibilityRole="button" onPress={() => void chooseMode(item)} style={[styles.sheetRow, active ? styles.sheetRowActive : null]} testID={`practice.mode.${item}`}>
                         <View style={styles.sheetIcon}>
                           <Text style={styles.sheetIndex}>{PRACTICE_MODE_LABELS[item].slice(0, 1)}</Text>
                         </View>
@@ -371,12 +375,12 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                 <Text style={styles.sheetTitle}>选择练习范围</Text>
                 <Text style={styles.sheetSubtitle}>搜索词书或章节，章节为空时默认按整本词书出题。</Text>
                 <Field value={scopeQuery} onChangeText={setScopeQuery} placeholder="搜索当前词书或章节" />
-                <ScrollView keyboardShouldPersistTaps="handled" style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
+                <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
                   <Text style={styles.sheetGroup}>词书</Text>
                   {filteredBooks.map(book => {
                     const active = String(book.id) === bookId
                     return (
-                      <Pressable key={String(book.id)} accessibilityRole="button" onPress={() => void selectBook(String(book.id))} style={[styles.sheetRow, active ? styles.sheetRowActive : null]}>
+                      <Pressable key={String(book.id)} accessibilityLabel={`选择练习词书-${book.title}`} accessibilityRole="button" onPress={() => void selectBook(String(book.id))} style={[styles.sheetRow, active ? styles.sheetRowActive : null]} testID={`practice.scope.book.${String(book.id)}`}>
                         <View style={styles.sheetBody}>
                           <Text numberOfLines={1} style={styles.sheetLabel}>{book.title}</Text>
                           <Text style={styles.sheetMeta}>{book.total_words || book.word_count || 0} 词</Text>
@@ -387,7 +391,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                   })}
                   {bookId ? <Text style={styles.sheetGroup}>章节</Text> : null}
                   {bookId ? (
-                    <Pressable accessibilityRole="button" onPress={() => void chooseChapter(null)} style={[styles.sheetRow, chapterId == null ? styles.sheetRowActive : null]}>
+                    <Pressable accessibilityLabel="选择整本词书" accessibilityRole="button" onPress={() => void chooseChapter(null)} style={[styles.sheetRow, chapterId == null ? styles.sheetRowActive : null]} testID="practice.scope.wholeBook">
                       <View style={styles.sheetIcon}>
                         <Text style={styles.sheetIndex}>全</Text>
                       </View>
@@ -399,7 +403,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                     </Pressable>
                   ) : null}
                   {filteredChapters.map((chapter, idx) => (
-                    <Pressable key={String(chapter.id)} accessibilityRole="button" onPress={() => void chooseChapter(chapter)} style={[styles.sheetRow, String(chapter.id) === String(chapterId) ? styles.sheetRowActive : null]}>
+                    <Pressable key={String(chapter.id)} accessibilityLabel={`选择练习章节-${chapter.title}`} accessibilityRole="button" onPress={() => void chooseChapter(chapter)} style={[styles.sheetRow, String(chapter.id) === String(chapterId) ? styles.sheetRowActive : null]} testID={`practice.scope.chapter.${String(chapter.id)}`}>
                       <View style={styles.sheetIcon}>
                         <Text style={styles.sheetIndex}>{String(idx + 1).padStart(2, '0')}</Text>
                       </View>
@@ -416,6 +420,6 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
           </View>
         </View>
       </Modal>
-    </>
+    </View>
   )
 }
