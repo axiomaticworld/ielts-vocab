@@ -25,6 +25,13 @@ export type StickerKey =
   | 'reviewClock'
   | 'scrollNote'
   | 'studyWindow'
+  | 'studyBadgePractice'
+  | 'studyBadgeTodo'
+  | 'studyBadgeWrong'
+  | 'studyDecorBanner'
+  | 'studyDecorMascot'
+  | 'studyHeroBoard'
+  | 'studyLoungeRoom'
   | 'tapePin'
   | 'treasureBox'
   | 'treasureChest'
@@ -85,6 +92,13 @@ export const stickerCatalog: Record<StickerKey, StickerMeta> = {
   reviewClock: { fileName: 'review-clock.png', height: 300, role: 'object', width: 300 },
   scrollNote: { fileName: 'scroll-note.png', height: 240, role: 'object', width: 300 },
   studyWindow: { fileName: 'study-window.png', height: 360, role: 'object', width: 360 },
+  studyBadgePractice: { fileName: 'study-badge-practice.png', height: 675, role: 'object', width: 612 },
+  studyBadgeTodo: { fileName: 'study-badge-todo.png', height: 989, role: 'object', width: 865 },
+  studyBadgeWrong: { fileName: 'study-badge-wrong.png', height: 997, role: 'object', width: 815 },
+  studyDecorBanner: { fileName: 'study-decor-banner.png', height: 819, role: 'object', width: 467 },
+  studyDecorMascot: { fileName: 'study-decor-mascot.png', height: 225, role: 'character', width: 228 },
+  studyHeroBoard: { fileName: 'study-hero-board.png', height: 1114, role: 'object', width: 1391 },
+  studyLoungeRoom: { fileName: 'study-lounge-room.png', height: 1024, role: 'object', width: 1536 },
   tapePin: { fileName: 'tape-pin.png', height: 360, role: 'object', width: 360 },
   treasureBox: { fileName: 'treasure-box.png', height: 300, role: 'object', width: 300 },
   treasureChest: { fileName: 'treasure-chest.png', height: 360, role: 'object', width: 360 },
