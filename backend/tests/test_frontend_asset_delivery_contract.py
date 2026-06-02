@@ -170,7 +170,7 @@ def test_release_artifact_path_builds_with_and_uploads_oss_assets():
     assert '! -name index.html -exec rm -rf {} +' in build_script
     assert 'frontend_assets_uploaded_to_oss' in deploy_script
     assert 'Skipping frontend OSS upload; artifact already uploaded assets' in deploy_script
-    assert 'rsync --partial --progress' in workflow
+    assert 'rsync --partial --append-verify --progress' in workflow
     assert "cat > '${remote_tmp}/ielts-vocab-release.tgz'" not in workflow
     assert 'artifact_upload_started=' in workflow
     assert 'FRONTEND_ASSET_OSS_PUBLIC_BASE_URL' in workflow
@@ -453,3 +453,6 @@ def test_nginx_template_compresses_and_caches_static_assets():
     assert 'location /assets/' in config
     assert 'expires 1y;' in config
     assert 'Cache-Control "public, max-age=31536000, immutable"' in config
+    assert 'location = /index.html' in config
+    assert 'Cache-Control "no-cache, max-age=0, must-revalidate" always' in config
+    assert 'add_header Expires "0" always' in config

@@ -6,6 +6,8 @@
     "android": "react-native run-android",
     "android:dev": "IELTS_MOBILE_ENV=dev react-native run-android",
     "android:prod": "IELTS_MOBILE_ENV=prod react-native run-android",
+    "e2e:android": "bash scripts/run-maestro-e2e.sh all",
+    "e2e:smoke": "bash scripts/run-maestro-e2e.sh smoke",
     "ios": "react-native run-ios",
     "lint": "eslint src --ext .ts,.tsx",
     "start": "react-native start",

@@ -18,6 +18,8 @@
     "app-core:typecheck": "pnpm --dir packages/app-core typecheck",
     "lint": "pnpm --dir frontend lint",
     "mobile:android": "pnpm --dir apps/mobile android",
+    "mobile:e2e:android": "bash apps/mobile/scripts/run-maestro-e2e.sh all",
+    "mobile:e2e:smoke": "bash apps/mobile/scripts/run-maestro-e2e.sh smoke",
     "mobile:ios": "pnpm --dir apps/mobile ios",
     "mobile:test": "pnpm --dir apps/mobile test",
     "mobile:typecheck": "pnpm --dir apps/mobile typecheck",

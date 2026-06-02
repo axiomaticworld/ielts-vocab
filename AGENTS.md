@@ -15,6 +15,7 @@ Last updated: 2026-05-07 21:04:03 +08:00
 - Treat `vocabulary_data/**` and `pnpm-lock.yaml` as generated artifacts that are exempt from the `500`-line cap.
 - Keep `pnpm check:file-lines` and `pnpm lint` green before submit; `pnpm build` and `pnpm test` now run the guardrail bundle automatically.
 - Keep `pnpm verify:clients` green before mobile or shared-client submits.
+- For Android mobile work, do not ask the user to start the simulator. Start or reuse the local AVD `ielts_vocab_api35`, start Metro on `8081`, run `adb reverse tcp:8081 tcp:8081`, install or launch the debug APK, and verify with foreground activity, `logcat`, and emulator screenshots. Only call out a gap when the emulator/SDK is broken or the scenario needs true-device coverage.
 - Keep `pytest backend/tests/test_source_text_integrity.py -q` green after backend or text-heavy edits.
 - Treat the remote cloud chain as canonical for domain/runtime bugs: `axiomaticworld.com -> nginx(:443/:80) -> active HTTP slot gateway-bff(:18000|:28000) -> downstream services(:18101-18108|:28101-28108)`, with `/socket.io` proxied to ASR Socket.IO on `:5001`.
 - Use the local split runtime only for reproduction: preview UI on `3002`, browser API ingress on `8000`, downstream services on `8101-8108`, and speech Socket.IO on `5001`.
