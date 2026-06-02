@@ -90,4 +90,34 @@ describe('mobile practice engine', () => {
     assert.ok(!options.includes('向导；“guide”的复数'))
     assert.ok(!options.includes('协会'))
   })
+
+  it('prefers preset listening confusables before falling back to the chapter queue', () => {
+    const listeningWord: MobileWord = {
+      ...word,
+      word: 'power',
+      phonetic: '/ˈpaʊə(r)/',
+      definition: '力量；电源；权力',
+      listening_confusables: [
+        { word: 'powerful', phonetic: '/ˈpaʊəfəl/', pos: 'adj.', definition: '强大的' },
+        { word: 'powder', phonetic: '/ˈpaʊdə(r)/', pos: 'n.', definition: '粉末' },
+        { word: 'tower', phonetic: '/ˈtaʊə(r)/', pos: 'n.', definition: '塔' },
+        { word: 'powers', phonetic: '/ˈpaʊəz/', pos: 'n.', definition: '力量；“power”的复数' },
+      ],
+    }
+
+    const options = buildPracticeOptions(listeningWord, [
+      listeningWord,
+      { ...word, word: 'random', definition: '随机的' },
+      { ...word, word: 'distant', definition: '遥远的' },
+      { ...word, word: 'noise', definition: '噪音' },
+    ])
+
+    assert.equal(options.length, 4)
+    assert.ok(options.includes('力量；电源；权力'))
+    assert.ok(options.includes('强大的'))
+    assert.ok(options.includes('粉末'))
+    assert.ok(options.includes('塔'))
+    assert.ok(!options.includes('力量；“power”的复数'))
+    assert.ok(!options.includes('随机的'))
+  })
 })
