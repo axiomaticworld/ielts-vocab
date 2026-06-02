@@ -1,0 +1,24 @@
+appId: com.axiomaticworld.ieltsvocab
+---
+- runFlow: _login.yaml
+- tapOn:
+    id: tab.books
+- extendedWaitUntil:
+    visible:
+      id: screen.books
+    timeout: 10000
+- assertVisible: 全部词书
+- tapOn:
+    id: tab.practice
+- extendedWaitUntil:
+    visible:
+      id: screen.practice
+    timeout: 10000
+- tapOn:
+    id: practice.entry.ebbinghaus
+- extendedWaitUntil:
+    visible:
+      id: practice.quickmemory.known
+    timeout: 30000
+- tapOn:
+    id: practice.quickmemory.unknown
