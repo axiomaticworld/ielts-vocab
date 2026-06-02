@@ -428,7 +428,7 @@ export default function FollowMode({
             {segments.length ? segments.map((segment, index) => (
               <span
                 key={segment.id}
-                className={`follow-phonetic-chip${index === activeIndex ? ' is-active' : ''}${index < activeIndex ? ' is-past' : ''}`}
+                className={`follow-phonetic-chip${index === activeIndex ? ' is-active' : ''}${index < activeIndex ? ' is-past' : ''}${segmentStatusClass(segment, segmentStatusMap)}`}
               >
                 /{segment.phonetic}/
               </span>

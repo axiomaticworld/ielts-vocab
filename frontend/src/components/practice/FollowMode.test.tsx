@@ -302,6 +302,9 @@ describe('FollowMode', () => {
     expect(container.querySelector('.follow-word-part.is-good')?.textContent).toBe('phe')
     expect(container.querySelector('.follow-word-part.is-weak')?.textContent).toBe('no')
     expect(container.querySelector('.follow-word-part.is-ok')?.textContent).toBe('menon')
+    expect(container.querySelector('.follow-phonetic-chip.is-good')?.textContent).toBe('/fə/')
+    expect(container.querySelector('.follow-phonetic-chip.is-weak')?.textContent).toBe('/nə/')
+    expect(container.querySelector('.follow-phonetic-chip.is-ok')?.textContent).toBe('/mɪnən/')
     expect(container.querySelector('.follow-segment-feedback')).toBeNull()
     expect(evaluateFollowReadPronunciationMock.mock.calls[0][0].segments).toEqual([
       { text: 'phe', phonetic: 'fə' },

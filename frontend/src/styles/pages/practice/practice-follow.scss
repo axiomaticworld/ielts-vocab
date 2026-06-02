@@ -159,6 +159,18 @@
     border-color: rgba(var(--accent-rgb), var(--alpha-24));
 }
 
+.follow-phonetic-chip.is-good {
+    color: var(--success);
+}
+
+.follow-phonetic-chip.is-ok {
+    color: var(--warning);
+}
+
+.follow-phonetic-chip.is-weak {
+    color: var(--error);
+}
+
 .follow-definition-row {
     margin: 0 auto;
     width: 100%;
