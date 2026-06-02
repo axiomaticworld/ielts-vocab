@@ -41,10 +41,10 @@ export function ErrorsScreen({ navigate }: { navigate: Navigate }) {
     <ScreenScroll hideHeader title="错词本" subtitle="搜索、清错、导出，并把错词保存为自定义词书。">
       <StatusText error={error} loading={loading} />
       <Card>
-        <Field value={search} onChangeText={setSearch} placeholder="搜索错词" />
+        <Field value={search} onChangeText={setSearch} placeholder="搜索错词" testID="errors.search" />
         <Row>
-          <PrimaryButton label="搜索" onPress={() => refresh(search)} />
-          <PrimaryButton label="错词强化" onPress={() => navigate('practice', { mode: 'errors' })} />
+          <PrimaryButton label="搜索" onPress={() => refresh(search)} testID="errors.searchSubmit" />
+          <PrimaryButton label="错词强化" onPress={() => navigate('practice', { mode: 'errors' })} testID="errors.practice" />
         </Row>
       </Card>
       <Card>

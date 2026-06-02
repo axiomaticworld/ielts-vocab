@@ -31,6 +31,7 @@ export function ScreenScroll({
       contentContainerStyle={styles.screen}
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
     >
       {hideHeader ? null : (
         <View style={styles.header}>
@@ -54,15 +55,19 @@ export function Card({ children, style, stickers }: { children: React.ReactNode;
 }
 
 export function PrimaryButton({
+  accessibilityLabel,
   disabled,
   label,
   onPress,
+  testID,
   tone = 'primary',
   sticker,
 }: {
+  accessibilityLabel?: string
   disabled?: boolean
   label: string
   onPress: () => void
+  testID?: string
   tone?: 'primary' | 'danger' | 'neutral' | 'accent'
   sticker?: StickerKey
 }) {
@@ -76,9 +81,12 @@ export function PrimaryButton({
           : null
   return (
     <Pressable
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
       style={[styles.button, toneStyle, disabled ? styles.disabled : null]}
+      testID={testID}
     >
       <Text style={[styles.buttonText, tone === 'neutral' ? styles.darkButtonText : null]}>
         {label}
@@ -93,24 +101,29 @@ export function PrimaryButton({
 }
 
 export function Field({
+  accessibilityLabel,
   keyboardType,
   multiline,
   onChangeText,
   placeholder,
   secureTextEntry,
   style,
+  testID,
   value,
 }: {
+  accessibilityLabel?: string
   keyboardType?: KeyboardTypeOptions
   multiline?: boolean
   onChangeText: (value: string) => void
   placeholder: string
   secureTextEntry?: boolean
   style?: StyleProp<any>
+  testID?: string
   value: string
 }) {
   return (
     <TextInput
+      accessibilityLabel={accessibilityLabel ?? placeholder}
       autoCapitalize="none"
       keyboardType={keyboardType}
       multiline={multiline}
@@ -119,6 +132,7 @@ export function Field({
       scrollEnabled={false}
       secureTextEntry={secureTextEntry}
       style={[styles.input, multiline ? styles.textarea : null, style]}
+      testID={testID}
       value={value}
     />
   )

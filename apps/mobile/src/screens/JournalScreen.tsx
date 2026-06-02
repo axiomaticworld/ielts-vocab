@@ -40,8 +40,8 @@ export function JournalScreen() {
       {notice ? <Meta>{notice}</Meta> : null}
       <Card>
         <Heading>生成今日总结</Heading>
-        <Field value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
-        <PrimaryButton label="生成总结" onPress={() => void generate().then(refresh).catch(err => setError(err.message))} />
+        <Field value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" testID="journal.date" />
+        <PrimaryButton label="生成总结" onPress={() => void generate().then(refresh).catch(err => setError(err.message))} testID="journal.generate" />
       </Card>
       {summaries.map(summary => (
         <Card key={String(summary.id ?? summary.date)}>

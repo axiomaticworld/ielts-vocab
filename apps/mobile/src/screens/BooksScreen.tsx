@@ -157,7 +157,14 @@ export function BooksScreen({
             const total = bookTotal(book, progress)
             const owned = myBooks.includes(String(book.id))
             return (
-              <Pressable key={String(book.id)} accessibilityRole="button" onPress={() => void openBook(book)} style={styles.bookCard}>
+              <Pressable
+                accessibilityLabel={`打开词书-${book.title}`}
+                accessibilityRole="button"
+                key={String(book.id)}
+                onPress={() => void openBook(book)}
+                style={styles.bookCard}
+                testID={`books.book.${String(book.id)}`}
+              >
                 <View style={styles.bookMain}>
                   <View style={styles.titleRow}>
                     <Text numberOfLines={1} style={styles.bookTitle}>{book.title}</Text>
@@ -194,13 +201,13 @@ export function BooksScreen({
                   </Text>
                 </View>
               </View>
-              <Pressable accessibilityRole="button" onPress={() => setSelectedBook(null)}>
+              <Pressable accessibilityLabel="返回词书列表" accessibilityRole="button" onPress={() => setSelectedBook(null)} testID="books.backToList">
                 <Text style={styles.linkText}>词书列表</Text>
               </Pressable>
             </View>
             <Row>
-              <PrimaryButton label={myBooks.includes(String(selectedBook.id)) ? '已加入我的词书' : '加入我的词书'} onPress={() => void addBook(selectedBook)} />
-              <PrimaryButton label="继续学习" tone="accent" onPress={() => startChapter()} />
+              <PrimaryButton label={myBooks.includes(String(selectedBook.id)) ? '已加入我的词书' : '加入我的词书'} onPress={() => void addBook(selectedBook)} testID="books.addMyBook" />
+              <PrimaryButton label="继续学习" tone="accent" onPress={() => startChapter()} testID="books.continue" />
             </Row>
           </Card>
           <View style={styles.listHead}>
@@ -213,7 +220,14 @@ export function BooksScreen({
             const learned = toNumber(progress?.words_learned ?? progress?.current_index)
             const total = chapterTotal(chapter)
             return (
-              <Pressable key={String(chapter.id)} accessibilityRole="button" onPress={() => startChapter(chapter)} style={styles.chapterRow}>
+              <Pressable
+                accessibilityLabel={`开始章节-${chapter.title}`}
+                accessibilityRole="button"
+                key={String(chapter.id)}
+                onPress={() => startChapter(chapter)}
+                style={styles.chapterRow}
+                testID={`books.chapter.${String(chapter.id)}`}
+              >
                 <View style={styles.chapterIndex}>
                   <Text style={styles.chapterIndexText}>{String(index + 1).padStart(2, '0')}</Text>
                 </View>
