@@ -28,7 +28,10 @@ import {
   type SmartWordStatsStore,
   type WrongWord,
 } from '@ielts-vocab/app-core'
+import { loadLearningStatsCached, peekLearningStats } from './learningStatsCache'
 import { mobileApiClient } from './mobileApi'
+
+export { peekLearningStats }
 
 export type ExamResponseDraft = {
   questionId: number
@@ -88,7 +91,9 @@ export async function loadHomeTodos(): Promise<HomeTodoPayload> {
 }
 
 export async function loadLearningStats(): Promise<LearningStatsPayload> {
-  return LearningStatsPayloadSchema.parse(await mobileApiClient.json('/api/ai/learning-stats?days=7'))
+  return loadLearningStatsCached(async () =>
+    LearningStatsPayloadSchema.parse(await mobileApiClient.json('/api/ai/learning-stats?days=7')),
+  )
 }
 
 export async function loadLearnerProfile(): Promise<Record<string, unknown>> {

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Animated, Easing, Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native'
 import { PRACTICE_MODE_LABELS, type PracticeMode } from '@ielts-vocab/app-core'
-import { loadLearningStats } from '../api/learnerApi'
+import { loadLearningStats, peekLearningStats } from '../api/learnerApi'
 import { Sticker } from '../components/stickers'
 import type { StickerKey } from '../components/stickers/catalog'
 import { todayMasteredWordsFromStats } from '../lib/learningStats'
@@ -112,7 +112,10 @@ function modeRevealStyle(mode: PracticeMode, reveal: Animated.Value) {
 export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuProps) {
   const reveal = React.useRef(new Animated.Value(0)).current
   const closingRef = React.useRef(false)
-  const [todayMasteredWords, setTodayMasteredWords] = React.useState(0)
+  const [todayMasteredWords, setTodayMasteredWords] = React.useState(() => {
+    const cached = peekLearningStats()
+    return cached ? todayMasteredWordsFromStats(cached) : 0
+  })
 
   React.useEffect(() => {
     const opening = Animated.timing(reveal, {
