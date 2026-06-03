@@ -12,8 +12,12 @@ let speechOptions: {
   onError?: ((message: string) => void) | undefined
 } = {}
 
-vi.mock('../../../hooks/useSpeechRecognition', () => ({
-  useSpeechRecognition: (options: typeof speechOptions) => {
+vi.mock('../../../hooks', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const actual = await vi.importActual<any>('../../../hooks')
+  return {
+    ...actual,
+    useSpeechRecognition: () => (useSpeechRecognition: (options: typeof speechOptions) => {
     speechOptions = options
     return {
       isConnected: true,
@@ -22,8 +26,9 @@ vi.mock('../../../hooks/useSpeechRecognition', () => ({
       startRecording: startRecordingMock,
       stopRecording: stopRecordingMock,
     }
-  },
-}))
+  }),
+  }
+})
 
 vi.mock('../../../lib', async () => {
   const actual = await vi.importActual<typeof import('../../../lib')>('../../../lib')

@@ -35,8 +35,12 @@ vi.mock('./utils', () => ({
   stopAudio: (...args: unknown[]) => stopAudioMock(...args),
 }))
 
-vi.mock('../../hooks/useAIChat', () => ({
-  PASSIVE_STUDY_SESSION_MIN_SECONDS: 30,
+vi.mock('../../hooks', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const actual = await vi.importActual<any>('../../hooks')
+  return {
+    ...actual,
+    useAIChat: () => (PASSIVE_STUDY_SESSION_MIN_SECONDS: 30,
   prepareStudySessionForLearningAction: undefined,
   finalizeStudySessionSegment: undefined,
   resolveStudySessionDurationSeconds: () => 1,
@@ -45,8 +49,9 @@ vi.mock('../../hooks/useAIChat', () => ({
   cancelSession: (...args: unknown[]) => cancelSessionMock(...args),
   flushStudySessionOnPageHide: (...args: unknown[]) => flushStudySessionOnPageHideMock(...args),
   touchStudySessionActivity: (...args: unknown[]) => touchStudySessionActivityMock(...args),
-  updateStudySessionSnapshot: (...args: unknown[]) => updateStudySessionSnapshotMock(...args),
-}))
+  updateStudySessionSnapshot: (...args: unknown[]) => updateStudySessionSnapshotMock(...args)),
+  }
+})
 
 vi.mock('../../lib', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
