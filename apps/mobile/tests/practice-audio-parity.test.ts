@@ -29,7 +29,7 @@ describe('mobile audio practice parity contract', () => {
 
     assert.match(helperSource, /buildDictationFeedback/)
     assert.match(helperSource, /拼写不一致/)
-    assert.match(screenSource, /mode === 'dictation' && !result\.correct/)
+    assert.match(screenSource, /activeMode === 'dictation' && !result\.correct/)
     assert.match(screenSource, /buildDictationFeedback\(value, result\.expected\)/)
     assert.match(screenSource, /void playWord\('auto'\)/)
   })
