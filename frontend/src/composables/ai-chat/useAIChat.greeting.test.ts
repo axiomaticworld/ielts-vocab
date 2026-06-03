@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useAIChat } from './useAIChat'
-import { clearGlobalLearningContext } from '../contexts/AIChatContext'
+import { clearGlobalLearningContext } from '../../contexts/AIChatContext'
 
 
 const greetingAudioMocks = vi.hoisted(() => ({
@@ -10,7 +10,7 @@ const greetingAudioMocks = vi.hoisted(() => ({
   warmup: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('../composables/ai-chat/greetingAudio', () => ({
+vi.mock('./greetingAudio', () => ({
   playAIGreetingAudio: greetingAudioMocks.play,
   stopAIGreetingAudio: greetingAudioMocks.stop,
   warmupAIGreetingAudio: greetingAudioMocks.warmup,

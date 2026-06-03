@@ -1,18 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import {
-  logSession,
-  recordModeAnswer,
-  startSession,
-  useAIChat,
-} from './useAIChat'
-import { clearGlobalLearningContext, setGlobalLearningContext } from '../contexts/AIChatContext'
-import { STORAGE_KEYS } from '../constants'
+import { useAIChat } from './useAIChat'
+import { logSession, recordModeAnswer, startSession } from './sessionTracking'
+import { clearGlobalLearningContext, setGlobalLearningContext } from '../../contexts/AIChatContext'
+import { STORAGE_KEYS } from '../../constants'
 
 const QUICK_MEMORY_KEY = 'quick_memory_records'
 const MODE_PERF_KEY = 'mode_performance'
 const greetingAudioMocks = vi.hoisted(() => ({ play: vi.fn(() => Promise.resolve(true)), stop: vi.fn(), warmup: vi.fn(() => Promise.resolve()) }))
-vi.mock('../composables/ai-chat/greetingAudio', () => ({ playAIGreetingAudio: greetingAudioMocks.play, stopAIGreetingAudio: greetingAudioMocks.stop, warmupAIGreetingAudio: greetingAudioMocks.warmup }))
+vi.mock('./greetingAudio', () => ({ playAIGreetingAudio: greetingAudioMocks.play, stopAIGreetingAudio: greetingAudioMocks.stop, warmupAIGreetingAudio: greetingAudioMocks.warmup }))
 
 beforeEach(() => {
   localStorage.clear()

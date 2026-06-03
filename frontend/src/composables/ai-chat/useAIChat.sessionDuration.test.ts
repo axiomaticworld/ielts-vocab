@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushStudySessionOnPageHide, logSession } from './useAIChat'
-import { STORAGE_KEYS } from '../constants'
+import { flushStudySessionOnPageHide, logSession } from './sessionTracking'
+import { STORAGE_KEYS } from '../../constants'
 
 const STARTED_AT = Date.parse('2026-04-11T18:08:40.000Z')
 const LAST_ACTIVE_AT = Date.parse('2026-04-11T18:08:48.000Z')
