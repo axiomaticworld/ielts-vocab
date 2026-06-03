@@ -1,22 +1,30 @@
-import { STORAGE_KEYS } from '../constants'
-import { reportHttpResponseError, reportNetworkError } from './errorReporting'
+// apiFetch transport layer.
+//
+// Responsibilities:
+// - URL construction and per-test override
+// - Request metadata header injection (X-Trace-Id, Idempotency-Key)
+// - Timeout / abort signal composition
+// - HTTP error normalization and 429 retry-after message formatting
+// - apiFetch / apiRequest public surface that callers see as `from '@/lib/apiClient'`
+//
+// Cross-cutting session state (refresh, auth expiry) lives in authRefresh.ts
+// and is imported here. Splitting the file along the request lifecycle keeps
+// each module under the 500-line guardrail and makes the auth refresh logic
+// independently testable.
+
+import { reportHttpResponseError, reportNetworkError } from '../errorReporting'
+import {
+  refreshAuthSession,
+  setAuthSessionActive as _setAuthSessionActiveFromAuth,
+  _authSessionActive,
+  _isAuthRoute,
+  _shouldPreemptivelyRefresh,
+} from './authRefresh'
+export type { ApiRequestOptions } from './types'
+import type { ApiRequestOptions } from './types'
 
 const RAW_API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? ''
 let _apiBaseOverride: string | null = null
-
-let _refreshing: Promise<void> | null = null
-let _authSessionActive = false
-let _authAccessExpiresAt = _readAuthAccessExpiry()
-const AUTH_REFRESH_AUTH_FAILED = 'auth_failed'
-const AUTH_REFRESH_TEMPORARILY_UNAVAILABLE = 'temporarily_unavailable'
-const AUTH_ACCESS_REFRESH_SKEW_MS = 5_000
-
-export interface ApiRequestOptions extends RequestInit {
-  skipAuthRefresh?: boolean
-  timeoutMs?: number
-  traceId?: string
-  idempotencyKey?: string
-}
 
 export function buildApiUrl(path: string): string {
   const normalizedApiBase = (_apiBaseOverride ?? RAW_API_BASE).replace(/\/+$/, '')
@@ -31,54 +39,9 @@ export function __setApiBaseOverrideForTests(value: string | null): void {
   _apiBaseOverride = value?.trim() ? value.trim() : null
 }
 
-export function setAuthSessionActive(active: boolean): void {
-  _authSessionActive = active
-  if (!active) {
-    setAuthAccessExpiry(null)
-  }
-}
-
-export function setAuthAccessExpiry(expiresInSeconds: number | null | undefined): void {
-  if (typeof expiresInSeconds !== 'number' || !Number.isFinite(expiresInSeconds)) {
-    _authAccessExpiresAt = null
-    localStorage.removeItem(STORAGE_KEYS.AUTH_ACCESS_EXPIRES_AT)
-    return
-  }
-
-  _authAccessExpiresAt = Date.now() + Math.max(0, expiresInSeconds) * 1000
-  localStorage.setItem(STORAGE_KEYS.AUTH_ACCESS_EXPIRES_AT, String(_authAccessExpiresAt))
-}
-
-function _readAuthAccessExpiry(): number | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.AUTH_ACCESS_EXPIRES_AT)
-    const value = raw ? Number(raw) : NaN
-    return Number.isFinite(value) ? value : null
-  } catch {
-    return null
-  }
-}
-
-function _isAuthRoute(url: string): boolean {
-  return (
-    url.includes('/api/auth/login') ||
-    url.includes('/api/auth/register') ||
-    url.includes('/api/auth/refresh') ||
-    url.includes('/api/auth/logout')
-  )
-}
-
-function _shouldPreemptivelyRefresh(url: string, skipAuthRefresh: boolean): boolean {
-  return (
-    !skipAuthRefresh &&
-    _authSessionActive &&
-    _authAccessExpiresAt !== null &&
-    Date.now() >= (_authAccessExpiresAt - AUTH_ACCESS_REFRESH_SKEW_MS) &&
-    !_isAuthRoute(url)
-  )
-}
-
-function _throwForRefreshFailure(refreshResult: 'auth_failed' | 'temporarily_unavailable'): never {
+function _throwForRefreshFailure(
+  refreshResult: 'auth_failed' | 'temporarily_unavailable',
+): never {
   if (refreshResult === 'auth_failed') {
     if (_authSessionActive) {
       window.dispatchEvent(new CustomEvent('auth:session-expired'))
@@ -97,64 +60,6 @@ async function _ensureFreshSession(url: string, skipAuthRefresh: boolean): Promi
   const refreshResult = await refreshAuthSession()
   if (refreshResult !== 'success') {
     _throwForRefreshFailure(refreshResult)
-  }
-}
-
-async function _attemptRefresh(): Promise<void> {
-  if (_refreshing) return _refreshing
-
-  let resolveRefreshing: () => void
-  let rejectRefreshing: (reason?: unknown) => void
-  const promise = new Promise<void>((resolve, reject) => {
-    resolveRefreshing = resolve
-    rejectRefreshing = reject
-  })
-
-  _refreshing = promise
-
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const resolve = resolveRefreshing!
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const reject = rejectRefreshing!
-
-  _doRefresh()
-    .then(() => {
-      resolve()
-    })
-    .catch(error => {
-      reject(error)
-    })
-    .finally(() => {
-      _refreshing = null
-    })
-
-  return promise
-}
-
-async function _doRefresh(): Promise<void> {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const r = await fetch(buildApiUrl('/api/auth/refresh'), {
-        method: 'POST',
-        credentials: 'include',
-        signal: AbortSignal.timeout(10_000),
-      })
-      if (r.ok) {
-        const payload = await r.json().catch(() => null)
-        setAuthAccessExpiry(
-          payload && typeof payload === 'object' && 'access_expires_in' in payload
-            ? Number(payload.access_expires_in)
-            : null,
-        )
-        return
-      }
-      if (r.status === 401) throw new Error(AUTH_REFRESH_AUTH_FAILED)
-      throw new Error(`refresh_http_${r.status}`)
-    } catch (err) {
-      const isAuthFailure = err instanceof Error && err.message === AUTH_REFRESH_AUTH_FAILED
-      if (isAuthFailure || attempt === 1) throw err
-      await new Promise(res => setTimeout(res, 1500))
-    }
   }
 }
 
@@ -180,7 +85,11 @@ function _withRequestMetadataHeaders(
   }
 }
 
-function _shouldRefreshResponse(url: string, response: Response, skipAuthRefresh: boolean): boolean {
+function _shouldRefreshResponse(
+  url: string,
+  response: Response,
+  skipAuthRefresh: boolean,
+): boolean {
   return (
     !skipAuthRefresh &&
     _authSessionActive &&
@@ -275,18 +184,6 @@ export async function apiRequest(
   return response
 }
 
-export async function refreshAuthSession(): Promise<'success' | 'auth_failed' | 'temporarily_unavailable'> {
-  try {
-    await _attemptRefresh()
-    return 'success'
-  } catch (error) {
-    if (error instanceof Error && error.message === AUTH_REFRESH_AUTH_FAILED) {
-      return 'auth_failed'
-    }
-    return AUTH_REFRESH_TEMPORARILY_UNAVAILABLE
-  }
-}
-
 function _buildHeaders(options: RequestInit): Record<string, string> {
   const existing: Record<string, string> =
     options.headers instanceof Headers
@@ -350,3 +247,7 @@ export async function apiFetch<T>(
 
   return response.json() as Promise<T>
 }
+
+// Re-export session-active setter so the legacy public surface remains stable
+// for callers that imported it from the old apiClient.ts barrel.
+export const setAuthSessionActive = _setAuthSessionActiveFromAuth
