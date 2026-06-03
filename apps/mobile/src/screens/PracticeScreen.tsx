@@ -16,72 +16,20 @@ import {
   type PracticeQueueSource,
 } from '@ielts-vocab/app-core'
 import { loadBooks, loadChapterWords, loadChapters, loadQuickMemoryReviewQueue, loadWrongWords, logPracticeSession, savePracticeProgress, syncQuickMemory, syncWrongWord } from '../api/learnerApi'
-import { Card, Field, Heading, Meta, Pill, PrimaryButton, Row, ScreenScroll, StatusText } from '../components/primitives'
+import { Card, Field, Heading, Meta, Pill, PrimaryButton, ScreenScroll, StatusText } from '../components/primitives'
 import { StickerLayer, practiceSheetStickerSlots } from '../components/stickers'
 import type { Navigate, NavigateOptions } from '../navigation/types'
-import { playRemoteAudio } from '../native/NativeAudioPlayer'
 import { useMobileSpeechRecognition } from '../speech/useMobileSpeechRecognition'
 import { theme } from '../theme'
 import { PracticeCompletionCard, PracticeEntryPanel, type PracticeEntry, type PracticeEntryKey } from './PracticeEntryPanel'
+import { MODE_HINTS, MODES, buildDictationFeedback, entryForMode, entryLabel, initialDueReviewRequested, initialEntry, isRecognitionReviewMode, scoreLabel, searchableText } from './PracticeScreen.helpers'
 import { styles } from './PracticeScreen.styles'
+import { usePracticeAudioModes } from './usePracticeAudioModes'
 
-const MODES: PracticeMode[] = ['smart', 'quickmemory', 'test', 'listening', 'meaning', 'dictation', 'follow', 'radio', 'errors']
 const QUICK_MEMORY_REVIEW_LIMIT = 10
 const QUICK_MEMORY_REVIEW_WINDOW_DAYS = 3
 
 type SheetState = 'mode' | 'scope' | null
-
-const MODE_HINTS: Record<PracticeMode, string> = {
-  smart: '按当前词书和复习状态智能出题',
-  quickmemory: '快速认词，写入复习队列',
-  test: '听音判断熟悉度，写入复习队列',
-  listening: '听音辨义，训练反应速度',
-  meaning: '看中文，主动拼出英文',
-  dictation: '听音写词，抓住拼写细节',
-  follow: '跟读发音，记录语音表现',
-  radio: '连续播放，适合碎片复习',
-  errors: '读取错词队列，直接开始清理',
-}
-
-function scoreLabel(label: string, value: number) {
-  return `${label} ${value}`
-}
-
-function entryForMode(mode?: PracticeMode): PracticeEntryKey {
-  if (mode === 'errors') return 'errors'
-  if (mode === 'follow') return 'follow'
-  if (mode === 'quickmemory' || mode === 'test') return 'ebbinghaus'
-  return 'regular'
-}
-
-function entryLabel(entry: PracticeEntryKey | null, mode: PracticeMode) {
-  if (entry === 'errors') return '错词练习'
-  if (entry === 'ebbinghaus') return '艾宾浩斯'
-  if (entry === 'follow') return '跟读练习'
-  return PRACTICE_MODE_LABELS[mode]
-}
-
-function searchableText(value: unknown) {
-  return String(value ?? '').toLowerCase()
-}
-
-function isRecognitionReviewMode(mode?: PracticeMode) {
-  return mode === 'quickmemory' || mode === 'test'
-}
-
-function hasExplicitScope(options?: NavigateOptions) {
-  return Boolean(options?.bookId || options?.chapterId != null)
-}
-
-function initialEntry(options?: NavigateOptions): PracticeEntryKey | null {
-  if (!options?.bookId && !options?.mode) return null
-  if (hasExplicitScope(options) && isRecognitionReviewMode(options.mode)) return 'regular'
-  return entryForMode(options.mode)
-}
-
-function initialDueReviewRequested(options?: NavigateOptions) {
-  return isRecognitionReviewMode(options?.mode) && !hasExplicitScope(options)
-}
 
 export function PracticeScreen({ navigate, options }: { navigate: Navigate; options?: NavigateOptions }) {
   const { start, state: speechState, stop } = useMobileSpeechRecognition('en')
@@ -257,24 +205,38 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     }
   }
 
-  async function playWord() {
-    if (!currentWord) return
-    const params = new URLSearchParams({ w: currentWord.word, cache_only: '1' })
-    await playRemoteAudio(`/api/tts/word-audio?${params.toString()}`).catch(err => {
-      setError(err instanceof Error ? err.message : '播放失败')
-    })
-  }
+  const {
+    audioStatus,
+    pauseRadio,
+    playWord,
+    radioInteractionCount,
+    radioPaused,
+    resumeRadio,
+    skipRadioNext,
+  } = usePracticeAudioModes({
+    currentWord,
+    index,
+    mode,
+    onRadioAdvance: async () => submit('played'),
+    setError,
+    setFeedback,
+  })
 
   async function submit(value = answer) {
     if (!currentWord) return
     const result = evaluatePracticeAnswer(currentWord, mode, value)
+    if (mode === 'follow' && !value.trim()) {
+      setFeedback(result.feedback)
+      return
+    }
     const nextCorrect = correctCount + (result.correct ? 1 : 0)
     const nextWrong = wrongCount + (result.correct ? 0 : 1)
     const nextIndex = index + 1
     setCorrectCount(nextCorrect)
     setWrongCount(nextWrong)
-    setFeedback(result.feedback)
+    setFeedback(mode === 'dictation' && !result.correct ? buildDictationFeedback(value, result.expected) : result.feedback)
     setAnswer('')
+    if (mode === 'dictation' && !result.correct) void playWord('auto')
     if (!result.correct || value === 'unknown') await syncWrongWord(buildWrongWordRecord(currentWord, mode)).catch(() => undefined)
     if (mode === 'quickmemory' || mode === 'test') await syncQuickMemory(buildQuickMemorySyncRecord(currentWord, value === 'known')).catch(() => undefined)
     const snapshot = buildProgressSnapshot({ correctCount: nextCorrect, currentIndex: nextIndex, queue, wrongCount: nextWrong })
@@ -305,6 +267,8 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     : mode === 'errors'
       ? '当前会读取错词队列。'
       : '可以从顶部状态栏搜索词书或章节。'
+  const followTranscript = (speechState.finalText || speechState.partialText || '').trim()
+  const followTranscriptLabel = speechState.finalText ? '最终识别' : speechState.partialText ? '实时识别' : '等待录音'
 
   return (
     <View style={styles.practiceRoot}>
@@ -351,12 +315,13 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                 <Text style={styles.word}>{mode === 'meaning' ? currentWord.definition : currentWord.word}</Text>
                 <Text style={styles.wordMeta}>{[currentWord.phonetic, currentWord.pos].filter(Boolean).join(' ') || 'IELTS 词条'}</Text>
                 {mode !== 'meaning' ? <Text style={styles.definition}>{currentWord.definition}</Text> : null}
-                {mode === 'listening' || mode === 'dictation' || mode === 'radio' ? <PrimaryButton label="播放发音" onPress={() => void playWord()} /> : null}
+                {mode === 'listening' || mode === 'dictation' ? <PrimaryButton label="播放发音" onPress={() => void playWord()} testID="practice.audio.replay" /> : null}
+                {audioStatus && mode !== 'follow' ? <Meta>{audioStatus}</Meta> : null}
                 {mode === 'follow' ? <PrimaryButton label={speechState.status === 'recording' ? '停止录音' : '开始跟读'} onPress={() => void toggleRecording()} /> : null}
                 {mode === 'follow' ? (
                   <View style={styles.micStrip}>
                     <Mic color={theme.colors.primaryDark} size={18} />
-                    <Text style={styles.micText}>音量 {Math.round(speechState.level * 100)}% · {speechState.finalText || speechState.partialText || '等待录音'}</Text>
+                    <Text style={styles.micText}>音量 {Math.round(speechState.level * 100)}% · {followTranscriptLabel}：{followTranscript || '暂无语音结果'}</Text>
                   </View>
                 ) : null}
                 {mode === 'quickmemory' || mode === 'test' ? (
@@ -379,15 +344,19 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                     ))}
                   </View>
                 ) : mode === 'radio' ? (
-                  <PrimaryButton label="下一词" onPress={() => void submit('played')} />
+                  <View style={styles.radioControls}>
+                    <PrimaryButton label={radioPaused ? '继续播放' : '暂停播放'} onPress={() => void (radioPaused ? resumeRadio() : pauseRadio())} testID="practice.radio.toggle" tone="neutral" />
+                    <PrimaryButton label="下一词" onPress={() => void skipRadioNext()} testID="practice.radio.next" />
+                  </View>
                 ) : mode !== 'follow' ? (
                   <>
                     <Field value={answer} onChangeText={setAnswer} placeholder="输入答案" testID="practice.answer" />
                     <PrimaryButton label="提交" onPress={() => void submit()} testID="practice.submit" />
                   </>
                 ) : (
-                  <PrimaryButton label="跟读完成，下一词" onPress={() => void submit('followed')} />
+                  <PrimaryButton disabled={!followTranscript} label="跟读完成，下一词" onPress={() => void submit(followTranscript)} testID="practice.follow.submit" />
                 )}
+                {mode === 'radio' ? <Meta>{`随身听${radioPaused ? '已暂停' : '播放中'} · 已记录 ${radioInteractionCount} 次操作`}</Meta> : null}
                 {feedback ? <Meta>{feedback}</Meta> : null}
                 {mode !== 'follow' && currentWord.examples?.length ? (
                   <View style={styles.exampleBox}>
