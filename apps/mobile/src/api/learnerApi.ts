@@ -10,6 +10,7 @@ import {
   MobileWordSchema,
   WrongWordSchema,
   buildQuickMemoryReviewQueuePath,
+  normalizeSmartStatsPayload,
   parseArray,
   type ExamPaperDetail,
   type ExamPaperSummary,
@@ -22,6 +23,8 @@ import {
   type MobileWord,
   type PracticeMode,
   type QuickMemoryReviewQueuePathOptions,
+  type SmartStatsSyncEntry,
+  type SmartWordStatsStore,
   type WrongWord,
 } from '@ielts-vocab/app-core'
 import { mobileApiClient } from './mobileApi'
@@ -89,6 +92,30 @@ export async function loadLearningStats(): Promise<LearningStatsPayload> {
 
 export async function loadLearnerProfile(): Promise<Record<string, unknown>> {
   return mobileApiClient.json('/api/ai/learner-profile?view=stats')
+}
+
+export async function loadSmartStats(): Promise<SmartWordStatsStore> {
+  const payload = await mobileApiClient.json<{ stats?: unknown[] }>('/api/ai/smart-stats')
+  return normalizeSmartStatsPayload(payload.stats)
+}
+
+export async function syncSmartStats(params: {
+  bookId?: string | null
+  chapterId?: string | number | null
+  mode?: string | null
+  stats: SmartStatsSyncEntry[]
+}) {
+  return mobileApiClient.json('/api/ai/smart-stats/sync', {
+    method: 'POST',
+    body: JSON.stringify({
+      context: {
+        bookId: params.bookId ?? undefined,
+        chapterId: params.chapterId == null ? undefined : String(params.chapterId),
+        mode: params.mode ?? undefined,
+      },
+      stats: params.stats,
+    }),
+  })
 }
 
 export async function loadBooks(search = ''): Promise<MobileBook[]> {

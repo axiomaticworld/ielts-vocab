@@ -7,7 +7,10 @@ import {
   buildQuickMemoryReviewQueuePath,
   buildQuickMemorySyncRecord,
   buildWrongWordRecord,
+  chooseSmartPracticeDimension,
   evaluatePracticeAnswer,
+  normalizeSmartStatsPayload,
+  recordSmartPracticeResult,
   resolvePracticeQueueSource,
   stripHtml,
   type MobileWord,
@@ -32,6 +35,45 @@ describe('mobile practice engine', () => {
     assert.equal(stripHtml('<p>Hello&nbsp;<strong>world</strong></p>'), 'Hello world')
     assert.equal(evaluatePracticeAnswer(word, 'meaning', ' dynamic ').correct, true)
     assert.equal(evaluatePracticeAnswer(word, 'dictation', 'dynamical').correct, false)
+    assert.equal(evaluatePracticeAnswer(word, 'listening', word.definition).correct, true)
+  })
+
+  it('uses learner profile context as the smart-mode fallback dimension', () => {
+    const dimension = chooseSmartPracticeDimension(word, {}, {
+      learnerProfile: {
+        dimensions: [
+          { dimension: 'listening', weakness: 0.8 },
+          { dimension: 'meaning', weakness: 0.2 },
+        ],
+      },
+    })
+
+    assert.equal(dimension, 'listening')
+    assert.equal(evaluatePracticeAnswer(word, 'smart', word.definition, { smartDimension: dimension }).correct, true)
+    assert.equal(evaluatePracticeAnswer(word, 'smart', word.word, { smartDimension: dimension }).correct, false)
+  })
+
+  it('selects weak smart dimensions from per-word stats before generic spelling', () => {
+    const stats = normalizeSmartStatsPayload([{
+      word: 'dynamic',
+      listening: { correct: 4, wrong: 0 },
+      meaning: { correct: 0, wrong: 3 },
+      dictation: { correct: 1, wrong: 0 },
+    }])
+
+    const dimension = chooseSmartPracticeDimension(word, stats, undefined, () => 0.4)
+    assert.equal(dimension, 'meaning')
+    assert.equal(evaluatePracticeAnswer(word, 'smart', 'dynamic', { smartDimension: dimension }).correct, true)
+    assert.equal(evaluatePracticeAnswer(word, 'smart', word.definition, { smartDimension: dimension }).correct, false)
+  })
+
+  it('records smart answer deltas and maps smart wrong-word dimensions', () => {
+    const afterWrong = recordSmartPracticeResult({}, word, 'dictation', false)
+    const afterCorrect = recordSmartPracticeResult(afterWrong, word, 'dictation', true)
+
+    assert.deepEqual(afterCorrect.dynamic.dictation, { correct: 1, wrong: 1 })
+    assert.equal(buildWrongWordRecord(word, 'smart', 'dictation').mistake_type, 'dictation')
+    assert.equal(buildWrongWordRecord(word, 'smart', 'listening').mistake_type, 'listening')
   })
 
   it('builds progress and sync payloads for answer flows', () => {

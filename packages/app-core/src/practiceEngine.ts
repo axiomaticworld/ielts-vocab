@@ -1,4 +1,4 @@
-import type { MobileWord, PracticeMode, WrongWord } from './mobileSchemas'
+import type { LearningStatsPayload, MobileWord, PracticeMode, WrongWord } from './mobileSchemas'
 
 export type PracticeResult = {
   correct: boolean
@@ -17,6 +17,29 @@ export type PracticeProgressSnapshot = {
 }
 
 export type PracticeQueueSource = 'chapter' | 'due-review' | 'errors'
+
+export type SmartPracticeDimension = 'listening' | 'meaning' | 'dictation'
+
+export type SmartDimensionStats = {
+  correct: number
+  wrong: number
+}
+
+export type SmartWordStats = Record<SmartPracticeDimension, SmartDimensionStats>
+
+export type SmartWordStatsStore = Record<string, SmartWordStats>
+
+export type SmartPracticeContext = {
+  learnerProfile?: Record<string, unknown> | null
+  learningStats?: LearningStatsPayload | Record<string, unknown> | null
+}
+
+export type SmartStatsSyncEntry = {
+  word: string
+  listening: SmartDimensionStats
+  meaning: SmartDimensionStats
+  dictation: SmartDimensionStats
+}
 
 export type QuickMemoryReviewQueuePathOptions = {
   bookId?: string | number | null
@@ -37,6 +60,14 @@ export const PRACTICE_MODE_LABELS: Record<PracticeMode, string> = {
   radio: '随身听',
   errors: '错词强化',
 }
+
+export const SMART_PRACTICE_DIMENSION_LABELS: Record<SmartPracticeDimension, string> = {
+  listening: '听音选义',
+  meaning: '看义拼词',
+  dictation: '听音拼写',
+}
+
+const SMART_DIMENSIONS: SmartPracticeDimension[] = ['listening', 'meaning', 'dictation']
 
 export function stripHtml(value: string | null | undefined): string {
   return String(value ?? '')
@@ -61,6 +92,119 @@ export function normalizeAnswer(value: string | null | undefined): string {
 
 export function wordKey(word: Pick<MobileWord, 'word'>): string {
   return normalizeAnswer(word.word)
+}
+
+function emptySmartWordStats(): SmartWordStats {
+  return {
+    listening: { correct: 0, wrong: 0 },
+    meaning: { correct: 0, wrong: 0 },
+    dictation: { correct: 0, wrong: 0 },
+  }
+}
+
+function normalizeSmartDimension(value: unknown): SmartPracticeDimension | null {
+  const normalized = normalizeAnswer(String(value ?? ''))
+  if (normalized === 'listening') return 'listening'
+  if (normalized === 'meaning') return 'meaning'
+  if (normalized === 'dictation' || normalized === 'writing' || normalized === 'spelling') return 'dictation'
+  return null
+}
+
+function dimMastery(dim: SmartDimensionStats): number {
+  const total = dim.correct + dim.wrong
+  return total === 0 ? -1 : dim.correct / total
+}
+
+function readObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+}
+
+function preferredDimensionFromContext(context?: SmartPracticeContext): SmartPracticeDimension | null {
+  const profile = readObject(context?.learnerProfile)
+  const dimensions = Array.isArray(profile?.dimensions) ? profile.dimensions : []
+  for (const item of dimensions) {
+    const dimension = normalizeSmartDimension(readObject(item)?.dimension)
+    if (dimension) return dimension
+  }
+  const profileSummary = readObject(profile?.summary)
+  const profileWeakest = normalizeSmartDimension(profileSummary?.weakest_mode)
+  if (profileWeakest) return profileWeakest
+
+  const learningStats = readObject(context?.learningStats)
+  const alltime = readObject(learningStats?.alltime)
+  return normalizeSmartDimension(alltime?.weakest_mode)
+}
+
+export function normalizeSmartStatsPayload(values: unknown): SmartWordStatsStore {
+  const result: SmartWordStatsStore = {}
+  if (!Array.isArray(values)) return result
+  for (const item of values) {
+    const row = readObject(item)
+    const key = normalizeAnswer(String(row?.word ?? ''))
+    if (!key) continue
+    const stats = emptySmartWordStats()
+    for (const dimension of SMART_DIMENSIONS) {
+      const source = readObject(row?.[dimension])
+      stats[dimension] = {
+        correct: Math.max(0, Math.trunc(Number(source?.correct ?? 0))),
+        wrong: Math.max(0, Math.trunc(Number(source?.wrong ?? 0))),
+      }
+    }
+    result[key] = stats
+  }
+  return result
+}
+
+export function chooseSmartPracticeDimension(
+  word: Pick<MobileWord, 'word'> | string,
+  stats: SmartWordStatsStore,
+  context?: SmartPracticeContext,
+  random = Math.random,
+): SmartPracticeDimension {
+  const key = typeof word === 'string' ? normalizeAnswer(word) : wordKey(word)
+  const wordStats = key ? stats[key] : undefined
+  const preferred = preferredDimensionFromContext(context)
+  if (!wordStats) return preferred ?? 'meaning'
+
+  const weights = SMART_DIMENSIONS.map(dimension => {
+    const mastery = dimMastery(wordStats[dimension])
+    const base = mastery === -1 ? 0.6 : Math.max(0.05, 1 - mastery)
+    return dimension === preferred ? base + 0.25 : base
+  })
+  const total = weights.reduce((sum, value) => sum + value, 0)
+  let pick = random() * total
+  for (let index = 0; index < SMART_DIMENSIONS.length; index += 1) {
+    pick -= weights[index]
+    if (pick <= 0) return SMART_DIMENSIONS[index]
+  }
+  return preferred ?? 'meaning'
+}
+
+export function resolveSmartPracticeMode(dimension: SmartPracticeDimension): Extract<PracticeMode, 'listening' | 'meaning' | 'dictation'> {
+  return dimension
+}
+
+export function recordSmartPracticeResult(
+  stats: SmartWordStatsStore,
+  word: Pick<MobileWord, 'word'> | string,
+  dimension: SmartPracticeDimension,
+  correct: boolean,
+): SmartWordStatsStore {
+  const key = typeof word === 'string' ? normalizeAnswer(word) : wordKey(word)
+  if (!key) return stats
+  const current = stats[key] ?? emptySmartWordStats()
+  return {
+    ...stats,
+    [key]: {
+      listening: { ...current.listening },
+      meaning: { ...current.meaning },
+      dictation: { ...current.dictation },
+      [dimension]: {
+        correct: current[dimension].correct + (correct ? 1 : 0),
+        wrong: current[dimension].wrong + (correct ? 0 : 1),
+      },
+    },
+  }
 }
 
 export function buildPracticeOptions(word: MobileWord, vocabulary: MobileWord[]): string[] {
@@ -216,7 +360,13 @@ export function evaluatePracticeAnswer(
   word: MobileWord,
   mode: PracticeMode,
   answer: string,
+  options?: { smartDimension?: SmartPracticeDimension },
 ): PracticeResult {
+  if (mode === 'smart') {
+    const dimension = options?.smartDimension ?? 'meaning'
+    return evaluatePracticeAnswer(word, resolveSmartPracticeMode(dimension), answer)
+  }
+
   if (mode === 'quickmemory' || mode === 'test') {
     const correct = answer === 'known'
     return {
@@ -291,14 +441,15 @@ export function buildQuickMemoryReviewQueuePath(options: QuickMemoryReviewQueueP
   return `/api/ai/quick-memory/review-queue?${params.toString()}`
 }
 
-export function buildWrongWordRecord(word: MobileWord, mode: PracticeMode): WrongWord {
-  const dimension = mode === 'listening'
+export function buildWrongWordRecord(word: MobileWord, mode: PracticeMode, smartDimension?: SmartPracticeDimension): WrongWord {
+  const effectiveMode = mode === 'smart' ? resolveSmartPracticeMode(smartDimension ?? 'meaning') : mode
+  const dimension = effectiveMode === 'listening'
     ? 'listening'
-    : mode === 'dictation'
+    : effectiveMode === 'dictation'
       ? 'dictation'
-      : mode === 'follow'
+      : effectiveMode === 'follow'
         ? 'speaking'
-        : mode === 'quickmemory' || mode === 'test'
+        : effectiveMode === 'quickmemory' || effectiveMode === 'test'
           ? 'recognition'
           : 'meaning'
   return {
