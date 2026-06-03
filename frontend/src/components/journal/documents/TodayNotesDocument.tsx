@@ -44,17 +44,17 @@ function ImageGallery({ images, isReadOnly, onAddImage, onRemove }: ImageGallery
         <span className="journal-image-panel__count">{images.length}/{MAX_JOURNAL_IMAGES}</span>
       </div>
       <div className={`journal-image-card-grid ${isReadOnly ? 'journal-image-card-grid--readonly' : ''}`}>
-      {images.map((src, i) => (
-        <figure key={i} className="journal-image-card">
-          <img src={src} alt={`附件 ${i + 1}`} />
-          <figcaption>图片 {i + 1}</figcaption>
-          {!isReadOnly && (
-            <button className="journal-image-card__remove" title="移除图片" aria-label={`移除图片 ${i + 1}`} onClick={() => onRemove(i)}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          )}
-        </figure>
-      ))}
+        {images.map((src, i) => (
+          <figure key={i} className="journal-image-card">
+            <img src={src} alt={`附件 ${i + 1}`} />
+            <figcaption>图片 {i + 1}</figcaption>
+            {!isReadOnly && (
+              <button className="journal-image-card__remove" title="移除图片" aria-label={`移除图片 ${i + 1}`} onClick={() => onRemove(i)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            )}
+          </figure>
+        ))}
         {!isReadOnly && images.length < MAX_JOURNAL_IMAGES ? (
           <button className="journal-image-card journal-image-card--add" type="button" onClick={onAddImage}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="22" height="22" aria-hidden="true">
@@ -241,8 +241,12 @@ export default function TodayNotesDocument({
             onReject={() => { setShowPolishModal(false); onRejectPolish() }}
             onContinuePolish={onPolish} polishing={polishing} />
         )}
-        <ImageGallery images={images} onAddImage={insertImage} onRemove={removeImage} />
-        <EditorContent editor={editor} className="journal-editor" />
+        <div className="journal-today-layout journal-today-layout--edit">
+          <ImageGallery images={images} onAddImage={insertImage} onRemove={removeImage} />
+          <div className="journal-today-text-column">
+            <EditorContent editor={editor} className="journal-editor" />
+          </div>
+        </div>
       </div>
     )
   }
@@ -253,8 +257,12 @@ export default function TodayNotesDocument({
       {entry ? (
         <article className="journal-doc-main journal-doc-main--today">
           <div className="journal-doc-main-scroll">
-            <ImageGallery images={images} isReadOnly onRemove={() => {}} />
-            <div className="journal-doc-body journal-doc-body--today markdown-content" dangerouslySetInnerHTML={{ __html: renderJournalMarkdown(textContent) }} />
+            <div className="journal-today-layout">
+              <ImageGallery images={images} isReadOnly onRemove={() => {}} />
+              <div className="journal-today-text-column">
+                <div className="journal-doc-body journal-doc-body--today markdown-content" dangerouslySetInnerHTML={{ __html: renderJournalMarkdown(textContent) }} />
+              </div>
+            </div>
             <div className="journal-doc-meta-row"><span>上次编辑于 {formatDateTime(entry.updated_at)}</span></div>
           </div>
         </article>
