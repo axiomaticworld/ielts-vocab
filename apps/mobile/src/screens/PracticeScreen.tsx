@@ -27,6 +27,7 @@ import type { Navigate, NavigateOptions } from '../navigation/types'
 import { useMobileSpeechRecognition } from '../speech/useMobileSpeechRecognition'
 import { theme } from '../theme'
 import { getErrorReviewFilters, hydrateErrorReviewProgress, persistErrorReviewProgress } from './errorReviewProgressStorage'
+import { PracticeControlSurface } from './PracticeControlSurface'
 import { PracticeCompletionCard, PracticeEntryPanel, type PracticeEntry, type PracticeEntryKey } from './PracticeEntryPanel'
 import { buildDictationFeedback, entryForMode, initialDueReviewRequested, initialEntry, isRecognitionReviewMode, searchableText } from './PracticeScreen.helpers'
 import { PracticeScopeSheet } from './PracticeScopeSheet'
@@ -393,6 +394,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
               selectedBookTitle={selectedBook?.title}
               wrongCount={wrongCount}
             />
+            <PracticeControlSurface activeMode={activeMode} chapterLabel={chapterLabel} currentWord={currentWord} mode={mode} onOpenMode={() => setSheet('mode')} onOpenScope={() => setSheet('scope')} onPlayWord={() => void playWord()} onRestart={() => void startPractice(mode, bookId, chapterId)} onSelectWord={setIndex} onSetFeedback={setFeedback} queue={queue} queueIndex={index} />
             {currentWord ? (
               <Card style={styles.workbench}>
                 <View style={styles.workbenchTop}>
