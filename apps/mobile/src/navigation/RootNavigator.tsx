@@ -11,12 +11,13 @@ import {
   Settings,
   SquarePen,
   User,
-  X,
   type LucideIcon,
 } from 'lucide-react-native'
 import {
   ActivityIndicator,
+  Animated,
   BackHandler,
+  Easing,
   Image,
   Pressable,
   SafeAreaView,
@@ -41,6 +42,7 @@ import { SearchScreen } from '../screens/SearchScreen'
 import { StatsDetailScreen, StatsScreen } from '../screens/StatsScreen'
 import { theme } from '../theme'
 import { PracticeActionMenu } from './PracticeActionMenu'
+import { PracticeCenterIcon } from './PracticeCenterIcon'
 import { styles } from './RootNavigator.styles'
 import type { Navigate, NavigateOptions, ScreenKey } from './types'
 
@@ -63,7 +65,6 @@ type HeaderAction = {
 
 type TabIconProps = {
   Icon: LucideIcon
-  menuOpen?: boolean
   primary: boolean
   selected: boolean
   screen: ScreenKey
@@ -133,19 +134,14 @@ function buildHeaderActions(screen: ScreenKey, navigate: Navigate): HeaderAction
   return actions
 }
 
-function TabIcon({ Icon, menuOpen = false, primary, screen, selected }: TabIconProps) {
+function TabIcon({ Icon, primary, screen, selected }: TabIconProps) {
   const artSource = tabArtSources[screen]
   return (
-    <View
-      style={[
-        styles.tabIconBox,
-        primary ? styles.tabIconBoxPrimary : null,
-        selected ? styles.tabIconBoxSelected : null,
-        primary && menuOpen ? styles.tabIconBoxPrimaryOpen : null,
-      ]}
-    >
-      {primary && menuOpen ? (
-        <X color={theme.colors.accentDark} size={24} strokeWidth={2.7} />
+    <View style={[styles.tabIconBox, primary ? styles.tabIconBoxPrimary : null, selected ? styles.tabIconBoxSelected : null]}>
+      {primary ? (
+        <View style={styles.practiceCenterSurface}>
+          <PracticeCenterIcon />
+        </View>
       ) : artSource ? (
         <Image resizeMode="contain" source={artSource} style={[styles.tabDrawnIcon, primary ? styles.tabDrawnIconPrimary : null]} />
       ) : (
@@ -191,6 +187,7 @@ function MainTabs() {
     history: [],
   })
   const [practiceMenuOpen, setPracticeMenuOpen] = React.useState(false)
+  const tabBarFade = React.useRef(new Animated.Value(1)).current
   const navigate = React.useCallback<Navigate>((screen, nextOptions) => {
     setPracticeMenuOpen(false)
     dispatch({
@@ -222,6 +219,15 @@ function MainTabs() {
     }
     navigate('home')
   }, [goBack, navigate, routeState.history.length])
+
+  React.useEffect(() => {
+    Animated.timing(tabBarFade, {
+      duration: practiceMenuOpen ? 280 : 180,
+      easing: practiceMenuOpen ? Easing.out(Easing.cubic) : Easing.in(Easing.quad),
+      toValue: practiceMenuOpen ? 0 : 1,
+      useNativeDriver: true,
+    }).start()
+  }, [practiceMenuOpen, tabBarFade])
 
   React.useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -308,10 +314,10 @@ function MainTabs() {
         <ActiveScreen goBack={goBack} navigate={navigate} options={routeState.current.options} />
       </View>
       {showTabs ? (
-        <View style={styles.tabBar}>
+        <Animated.View pointerEvents={practiceMenuOpen ? 'none' : 'auto'} style={[styles.tabBar, { opacity: tabBarFade }]}>
           {tabs.map(item => {
             const primary = item.key === 'practice'
-            const active = item.key === routeState.current.screen || (primary && practiceMenuOpen)
+            const active = item.key === routeState.current.screen
             return (
               <Pressable
                 accessibilityLabel={`底部导航-${item.label}`}
@@ -322,19 +328,20 @@ function MainTabs() {
                 style={({ pressed }) => [
                   styles.tabButton,
                   primary ? styles.tabButtonPrimary : null,
-                  primary && practiceMenuOpen ? styles.tabButtonPrimaryActive : null,
                   pressed ? styles.tabButtonPressed : null,
                 ]}
                 testID={`tab.${item.key}`}
               >
-                <TabIcon Icon={item.Icon} menuOpen={primary && practiceMenuOpen} primary={primary} screen={item.key} selected={active} />
-                <Text style={[styles.tabLabel, primary ? styles.tabLabelPrimary : null, active ? styles.tabLabelActive : null]}>
-                  {item.label}
-                </Text>
+                <TabIcon Icon={item.Icon} primary={primary} screen={item.key} selected={active} />
+                {primary ? null : (
+                  <Text style={[styles.tabLabel, active ? styles.tabLabelActive : null]}>
+                    {item.label}
+                  </Text>
+                )}
               </Pressable>
             )
           })}
-        </View>
+        </Animated.View>
       ) : null}
       {showTabs && practiceMenuOpen ? (
         <PracticeActionMenu

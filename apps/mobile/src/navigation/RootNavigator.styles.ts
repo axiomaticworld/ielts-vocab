@@ -95,9 +95,6 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  tabButtonPrimaryActive: {
-    backgroundColor: 'transparent',
-  },
   tabIconBox: {
     alignItems: 'center',
     height: 34,
@@ -105,20 +102,8 @@ export const styles = StyleSheet.create({
     width: 42,
   },
   tabIconBoxPrimary: {
-    height: 34,
-    width: 42,
-  },
-  tabIconBoxPrimaryOpen: {
-    backgroundColor: '#FFFDF0',
-    borderColor: 'rgba(111, 74, 56, 0.28)',
-    borderRadius: theme.radius.pill,
-    borderWidth: 1,
-    elevation: 7,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { height: 3, width: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 7,
-    width: 54,
+    height: 58,
+    width: 58,
   },
   tabIconBoxSelected: {
     backgroundColor: 'rgba(255, 253, 240, 0.45)',
@@ -131,6 +116,21 @@ export const styles = StyleSheet.create({
   tabDrawnIconPrimary: {
     height: 34,
     width: 42,
+  },
+  practiceCenterSurface: {
+    alignItems: 'center',
+    backgroundColor: '#FFFDF0',
+    borderColor: '#4A3B32',
+    borderRadius: 29,
+    borderWidth: 1,
+    elevation: 7,
+    height: 58,
+    justifyContent: 'center',
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    width: 58,
   },
   tabHeader: {
     flexDirection: 'row',
