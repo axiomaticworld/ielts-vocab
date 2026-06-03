@@ -84,6 +84,30 @@ describe('LearningJournalPage diary view', () => {
     expect(screen.getByRole('button', { name: '编辑笔记' })).toBeInTheDocument()
   })
 
+  it('renders diary images as capped attachment cards', async () => {
+    const imageMarkdown = Array.from({ length: 4 }, (_, index) => (
+      `![image-${index + 1}](data:image/png;base64,card${index + 1})`
+    )).join('\n')
+    apiFetchMock.mockImplementation((url: string) => {
+      if (url === '/api/notes/journal/today') {
+        return Promise.resolve({
+          entry: {
+            ...todayEntry,
+            content: `# 你好\n\n${imageMarkdown}`,
+          },
+        })
+      }
+      return Promise.reject(new Error(`Unexpected url: ${url}`))
+    })
+
+    const { container } = render(<LearningJournalPage />)
+
+    expect(await screen.findByText('图片附件')).toBeInTheDocument()
+    expect(container.querySelectorAll('.journal-image-card:not(.journal-image-card--add)')).toHaveLength(3)
+    expect(screen.getByText('3/3')).toBeInTheDocument()
+    expect(container.querySelector('.journal-doc-body')?.textContent).not.toContain('image-1')
+  })
+
   it('loads history entries after switching to the history tab', async () => {
     const user = userEvent.setup()
     apiFetchMock.mockImplementation((url: string) => {

@@ -20,23 +20,56 @@ interface TodayNotesDocumentProps {
 
 interface CtxMenuState { x: number; y: number; visible: boolean }
 
-/* ── Image Gallery ── */
+/* -- Image Gallery -- */
 
-function ImageGallery({ images, onRemove, readonly }: { images: string[]; onRemove: (idx: number) => void; readonly?: boolean }) {
-  if (images.length === 0) return null
+const MAX_JOURNAL_IMAGES = 3
+
+interface ImageGalleryProps {
+  images: string[]
+  isReadOnly?: boolean
+  onAddImage?: () => void
+  onRemove: (idx: number) => void
+}
+
+function ImageGallery({ images, isReadOnly, onAddImage, onRemove }: ImageGalleryProps) {
+  if (images.length === 0 && isReadOnly) return null
+
   return (
-    <div className="journal-image-gallery">
+    <section
+      className={`journal-image-panel ${isReadOnly ? 'journal-image-panel--readonly' : ''}`}
+      aria-label="日记图片附件"
+    >
+      <div className="journal-image-panel__head">
+        <span className="journal-image-panel__title">图片附件</span>
+        <span className="journal-image-panel__count">{images.length}/{MAX_JOURNAL_IMAGES}</span>
+      </div>
+      <div className={`journal-image-card-grid ${isReadOnly ? 'journal-image-card-grid--readonly' : ''}`}>
       {images.map((src, i) => (
-        <div key={i} className="journal-image-gallery-item">
+        <figure key={i} className="journal-image-card">
           <img src={src} alt={`附件 ${i + 1}`} />
-          {!readonly && (
-            <button className="journal-image-gallery-remove" title="移除图片" aria-label="移除图片" onClick={() => onRemove(i)}>
+          <figcaption>图片 {i + 1}</figcaption>
+          {!isReadOnly && (
+            <button className="journal-image-card__remove" title="移除图片" aria-label={`移除图片 ${i + 1}`} onClick={() => onRemove(i)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           )}
-        </div>
+        </figure>
       ))}
-    </div>
+        {!isReadOnly && images.length < MAX_JOURNAL_IMAGES ? (
+          <button className="journal-image-card journal-image-card--add" type="button" onClick={onAddImage}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="22" height="22" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path d="M21 15l-5-5L5 21" />
+              <path d="M12 7v6" />
+              <path d="M9 10h6" />
+            </svg>
+            <span>添加图片</span>
+            <small>最多 {MAX_JOURNAL_IMAGES} 张</small>
+          </button>
+        ) : null}
+      </div>
+    </section>
   )
 }
 
@@ -91,7 +124,7 @@ function extractImages(content: string): string[] {
   const imgs: string[] = []
   let m: RegExpExecArray | null
   while ((m = IMG_RE.exec(content)) !== null) { imgs.push(m[1]) }
-  return imgs
+  return imgs.slice(0, MAX_JOURNAL_IMAGES)
 }
 function stripImages(content: string): string {
   return content.replace(IMG_RE, '').replace(/\n{3,}/g, '\n\n').trim()
@@ -131,13 +164,13 @@ export default function TodayNotesDocument({
   })
 
   const saveCombined = useCallback((textMd: string, imgs: string[]) => {
-    const imgBlock = imgs.map((src, i) => `![image-${i + 1}](${src})`).join('\n')
+    const imgBlock = imgs.slice(0, MAX_JOURNAL_IMAGES).map((src, i) => `![image-${i + 1}](${src})`).join('\n')
     const combined = [textMd.trim(), imgBlock].filter(Boolean).join('\n\n')
     onSave(combined)
   }, [onSave])
 
   const insertImage = useCallback(() => {
-    if (images.length >= 3) return
+    if (images.length >= MAX_JOURNAL_IMAGES) return
     const inp = document.createElement('input')
     inp.type = 'file'; inp.accept = 'image/*'
     inp.onchange = (ev: Event) => {
@@ -147,7 +180,7 @@ export default function TodayNotesDocument({
       r.onload = () => {
         const dataUrl = r.result as string
         setImages(prev => {
-          const next = [...prev, dataUrl]
+          const next = [...prev, dataUrl].slice(0, MAX_JOURNAL_IMAGES)
           // Immediate save
           if (editor) {
             saveCombined(htmlToMarkdown(editor.getHTML()), next)
@@ -208,7 +241,7 @@ export default function TodayNotesDocument({
             onReject={() => { setShowPolishModal(false); onRejectPolish() }}
             onContinuePolish={onPolish} polishing={polishing} />
         )}
-        <ImageGallery images={images} onRemove={removeImage} />
+        <ImageGallery images={images} onAddImage={insertImage} onRemove={removeImage} />
         <EditorContent editor={editor} className="journal-editor" />
       </div>
     )
@@ -220,7 +253,7 @@ export default function TodayNotesDocument({
       {entry ? (
         <article className="journal-doc-main journal-doc-main--today">
           <div className="journal-doc-main-scroll">
-            <ImageGallery images={images} onRemove={() => {}} readonly />
+            <ImageGallery images={images} isReadOnly onRemove={() => {}} />
             <div className="journal-doc-body journal-doc-body--today markdown-content" dangerouslySetInnerHTML={{ __html: renderJournalMarkdown(textContent) }} />
             <div className="journal-doc-meta-row"><span>上次编辑于 {formatDateTime(entry.updated_at)}</span></div>
           </div>

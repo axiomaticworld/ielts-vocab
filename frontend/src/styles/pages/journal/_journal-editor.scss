@@ -310,56 +310,154 @@
   }
 }
 
-/* ── Image Gallery ── */
+/* -- Image cards -- */
 
-.journal-image-gallery {
-  display: flex;
-  gap: var(--size-8);
-  padding: var(--size-8) var(--size-10);
-  border-bottom: var(--size-1) solid var(--border-subtle);
+.journal-image-panel {
   flex-shrink: 0;
+  margin: var(--size-16) var(--size-20) var(--size-8);
+  padding: var(--size-14);
+  border: var(--size-1) solid var(--border-subtle);
+  border-radius: var(--size-14);
+  background: color-mix(in srgb, var(--surface-muted) var(--mix-35), var(--surface-base));
 }
 
-.journal-image-gallery-item {
+.journal-image-panel--readonly {
+  width: fit-content;
+  max-width: calc(100% - var(--size-40));
+}
+
+.journal-image-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-12);
+  margin-bottom: var(--size-10);
+}
+
+.journal-image-panel__title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.journal-image-panel__count {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-22);
+  padding: 0 var(--size-8);
+  border-radius: var(--size-999);
+  background: var(--surface-base);
+  color: var(--text-tertiary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.journal-image-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 168px));
+  gap: var(--size-12);
+  align-items: stretch;
+}
+
+.journal-image-card-grid--readonly {
+  grid-template-columns: repeat(auto-fit, 168px);
+}
+
+.journal-image-card {
   position: relative;
-  flex: 1;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  height: 200px;
-  max-height: 280px;
-  border-radius: var(--size-8);
+  height: 148px;
+  margin: 0;
   overflow: hidden;
   border: var(--size-1) solid var(--border-subtle);
-  background: var(--surface-muted);
+  border-radius: var(--size-12);
+  background: var(--surface-base);
+  box-shadow: var(--shadow-subtle);
 
   img {
     width: 100%;
-    height: 100%;
+    height: 112px;
     object-fit: cover;
+    background: var(--surface-muted);
   }
 
-  &:hover .journal-image-gallery-remove {
+  figcaption {
+    display: flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 var(--size-10);
+    color: var(--text-tertiary);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  &:hover .journal-image-card__remove {
     opacity: 1;
   }
 }
 
-.journal-image-gallery-remove {
+.journal-image-card--add {
+  align-items: center;
+  justify-content: center;
+  gap: var(--size-6);
+  border-style: dashed;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+
+  span {
+    font-size: 0.84rem;
+    font-weight: 800;
+  }
+
+  small {
+    font-size: 0.74rem;
+    color: var(--text-tertiary);
+  }
+
+  &:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) var(--mix-08), var(--surface-base));
+    color: var(--accent);
+  }
+}
+
+.journal-image-card__remove {
   position: absolute;
-  top: var(--size-4);
-  right: var(--size-4);
-  width: var(--size-22);
-  height: var(--size-22);
-  border-radius: var(--size-4);
-  border: none;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  top: var(--size-6);
+  right: var(--size-6);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: var(--size-24);
+  height: var(--size-24);
+  border: none;
+  border-radius: var(--size-6);
+  background: rgba(0, 0, 0, 0.58);
+  color: #fff;
   cursor: pointer;
   opacity: 0;
-  transition: opacity var(--transition-fast);
+  transition: opacity var(--transition-fast), background var(--transition-fast);
 
   &:hover {
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.78);
+  }
+}
+
+@media (max-width: 760px) {
+  .journal-image-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .journal-image-panel {
+    margin-inline: var(--size-12);
+  }
+
+  .journal-image-card-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
