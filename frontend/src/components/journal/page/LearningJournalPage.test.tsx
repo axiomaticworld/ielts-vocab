@@ -84,7 +84,7 @@ describe('LearningJournalPage diary view', () => {
     expect(screen.getByRole('button', { name: '编辑笔记' })).toBeInTheDocument()
   })
 
-  it('renders diary images as a capped attachment column', async () => {
+  it('renders diary images as capped top attachments', async () => {
     const imageMarkdown = Array.from({ length: 4 }, (_, index) => (
       `![image-${index + 1}](data:image/png;base64,card${index + 1})`
     )).join('\n')
@@ -103,12 +103,15 @@ describe('LearningJournalPage diary view', () => {
     const { container } = render(<LearningJournalPage />)
 
     expect(await screen.findByText('图片附件')).toBeInTheDocument()
-    expect(container.querySelector('.journal-today-layout')).not.toBeNull()
-    expect(container.querySelector('.journal-image-panel')).not.toBeNull()
-    expect(container.querySelector('.journal-today-text-column')).not.toBeNull()
+    expect(container.querySelector('.journal-today-stack')).not.toBeNull()
+    const imagePanel = container.querySelector('.journal-image-panel')
+    const body = container.querySelector('.journal-doc-body')
+    expect(imagePanel).not.toBeNull()
+    expect(body).not.toBeNull()
+    expect(imagePanel!.compareDocumentPosition(body!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(container.querySelectorAll('.journal-image-card:not(.journal-image-card--add)')).toHaveLength(3)
     expect(screen.getByText('3/3')).toBeInTheDocument()
-    expect(container.querySelector('.journal-doc-body')?.textContent).not.toContain('image-1')
+    expect(body?.textContent).not.toContain('image-1')
   })
 
   it('loads history entries after switching to the history tab', async () => {

@@ -241,11 +241,9 @@ export default function TodayNotesDocument({
             onReject={() => { setShowPolishModal(false); onRejectPolish() }}
             onContinuePolish={onPolish} polishing={polishing} />
         )}
-        <div className="journal-today-layout journal-today-layout--edit">
+        <div className="journal-today-stack journal-today-stack--edit">
           <ImageGallery images={images} onAddImage={insertImage} onRemove={removeImage} />
-          <div className="journal-today-text-column">
-            <EditorContent editor={editor} className="journal-editor" />
-          </div>
+          <EditorContent editor={editor} className="journal-editor" />
         </div>
       </div>
     )
@@ -257,11 +255,9 @@ export default function TodayNotesDocument({
       {entry ? (
         <article className="journal-doc-main journal-doc-main--today">
           <div className="journal-doc-main-scroll">
-            <div className="journal-today-layout">
+            <div className="journal-today-stack">
               <ImageGallery images={images} isReadOnly onRemove={() => {}} />
-              <div className="journal-today-text-column">
-                <div className="journal-doc-body journal-doc-body--today markdown-content" dangerouslySetInnerHTML={{ __html: renderJournalMarkdown(textContent) }} />
-              </div>
+              <div className="journal-doc-body journal-doc-body--today markdown-content" dangerouslySetInnerHTML={{ __html: renderJournalMarkdown(textContent) }} />
             </div>
             <div className="journal-doc-meta-row"><span>上次编辑于 {formatDateTime(entry.updated_at)}</span></div>
           </div>
