@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { CheckCircle2, ChevronRight, Mic, XCircle } from 'lucide-react-native'
 import {
   PRACTICE_MODE_LABELS,
+  SMART_PRACTICE_DIMENSION_LABELS,
   buildMobileWrongWordsReviewQueue,
   buildNextErrorReviewRoundWords,
   buildPracticeOptions,
@@ -11,6 +12,7 @@ import {
   buildWrongWordRecord,
   evaluatePracticeAnswer,
   resolvePracticeQueueSource,
+  resolveSmartPracticeMode,
   updateErrorReviewRoundResults,
   type ErrorReviewRoundResults,
   type MobileBook,
@@ -33,6 +35,7 @@ import { PracticeStatusHeader } from './PracticeStatusHeader'
 import { styles } from './PracticeScreen.styles'
 import { completePracticeSession, hydratePracticeSession, persistPracticeSessionProgress } from './practiceSessionLifecycle'
 import { practiceSessionDependencies } from './practiceSessionLifecycleRuntime'
+import { useMobileSmartPractice } from './useMobileSmartPractice'
 
 const QUICK_MEMORY_REVIEW_LIMIT = 10
 const QUICK_MEMORY_REVIEW_WINDOW_DAYS = 3
@@ -41,6 +44,7 @@ type SheetState = 'mode' | 'scope' | null
 
 export function PracticeScreen({ navigate, options }: { navigate: Navigate; options?: NavigateOptions }) {
   const { start, state: speechState, stop } = useMobileSpeechRecognition('en')
+  const { chooseSmartDimension, recordSmartAnswer, refreshSmartPracticeContext } = useMobileSmartPractice()
   const [entry, setEntry] = useState<PracticeEntryKey | null>(initialEntry(options))
   const [mode, setMode] = useState<PracticeMode>(options?.mode ?? 'quickmemory')
   const [dueReviewRequested, setDueReviewRequested] = useState(initialDueReviewRequested(options))
@@ -71,6 +75,8 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     [chapterId, chapters],
   )
   const currentWord = queue[index]
+  const smartDimension = useMemo(() => currentWord ? chooseSmartDimension(currentWord) : 'meaning', [chooseSmartDimension, currentWord])
+  const activeMode = mode === 'smart' ? resolveSmartPracticeMode(smartDimension) : mode
   const completed = queue.length > 0 && index >= queue.length
   const errorReviewRetryWords = mode === 'errors' && completed
     ? buildNextErrorReviewRoundWords(queue, errorRoundResults)
@@ -144,6 +150,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
       })
       if (nextQueueSource === 'chapter' && !nextBookId) throw new Error('请先选择练习范围')
       const errorFilters = getErrorReviewFilters(options)
+      if (nextMode === 'smart') await refreshSmartPracticeContext()
       const words = nextQueueSource === 'errors'
         ? buildMobileWrongWordsReviewQueue(
           await loadWrongWords('', errorFilters),
@@ -257,7 +264,8 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
 
   async function submit(value = answer) {
     if (!currentWord) return
-    const result = evaluatePracticeAnswer(currentWord, mode, value)
+    const currentSmartDimension = mode === 'smart' ? smartDimension : undefined
+    const result = evaluatePracticeAnswer(currentWord, mode, value, { smartDimension: currentSmartDimension })
     const nextCorrect = correctCount + (result.correct ? 1 : 0)
     const nextWrong = wrongCount + (result.correct ? 0 : 1)
     const nextIndex = index + 1
@@ -269,7 +277,8 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     if (mode === 'errors') setErrorRoundResults(nextErrorRoundResults)
     setFeedback(result.feedback)
     setAnswer('')
-    if (!result.correct || value === 'unknown') await syncWrongWord(buildWrongWordRecord(currentWord, mode)).catch(() => undefined)
+    if (mode === 'smart' && currentSmartDimension) await recordSmartAnswer({ bookId, chapterId, correct: result.correct, dimension: currentSmartDimension, word: currentWord })
+    if (!result.correct || value === 'unknown') await syncWrongWord(buildWrongWordRecord(currentWord, mode, currentSmartDimension)).catch(() => undefined)
     if (mode === 'quickmemory' || mode === 'test') await syncQuickMemory(buildQuickMemorySyncRecord(currentWord, value === 'known')).catch(() => undefined)
     const snapshot = buildProgressSnapshot({ correctCount: nextCorrect, currentIndex: nextIndex, queue, wrongCount: nextWrong })
     const persistedSnapshot = await persistPracticeSessionProgress({
@@ -372,12 +381,12 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
               <Card style={styles.workbench}>
                 <View style={styles.workbenchTop}>
                   <Pill label={`${index + 1}/${queue.length || 1}`} />
-                  <Pill label={speechState.status === 'recording' ? '录音中' : PRACTICE_MODE_LABELS[mode]} />
+                  <Pill label={speechState.status === 'recording' ? '录音中' : mode === 'smart' ? `${PRACTICE_MODE_LABELS.smart} · ${SMART_PRACTICE_DIMENSION_LABELS[smartDimension]}` : PRACTICE_MODE_LABELS[mode]} />
                 </View>
-                <Text style={styles.word}>{mode === 'meaning' ? currentWord.definition : currentWord.word}</Text>
+                <Text style={styles.word}>{activeMode === 'meaning' ? currentWord.definition : currentWord.word}</Text>
                 <Text style={styles.wordMeta}>{[currentWord.phonetic, currentWord.pos].filter(Boolean).join(' ') || 'IELTS 词条'}</Text>
-                {mode !== 'meaning' ? <Text style={styles.definition}>{currentWord.definition}</Text> : null}
-                {mode === 'listening' || mode === 'dictation' || mode === 'radio' ? <PrimaryButton label="播放发音" onPress={() => void playWord()} /> : null}
+                {activeMode !== 'meaning' ? <Text style={styles.definition}>{currentWord.definition}</Text> : null}
+                {activeMode === 'listening' || activeMode === 'dictation' || activeMode === 'radio' ? <PrimaryButton label="播放发音" onPress={() => void playWord()} /> : null}
                 {mode === 'follow' ? <PrimaryButton label={speechState.status === 'recording' ? '停止录音' : '开始跟读'} onPress={() => void toggleRecording()} /> : null}
                 {mode === 'follow' ? (
                   <View style={styles.micStrip}>
@@ -396,7 +405,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                       <Text style={styles.answerButtonText}>不认识</Text>
                     </Pressable>
                   </View>
-                ) : mode === 'listening' ? (
+                ) : activeMode === 'listening' ? (
                   <View style={styles.choiceWrap}>
                     {optionsForWord.map(option => (
                       <Pressable key={option} accessibilityLabel={`选择答案-${option}`} accessibilityRole="button" style={styles.choiceButton} onPress={() => void submit(option)} testID="practice.choice">
@@ -415,7 +424,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                   <PrimaryButton label="跟读完成，下一词" onPress={() => void submit('followed')} />
                 )}
                 {feedback ? <Meta>{feedback}</Meta> : null}
-                {mode !== 'follow' && currentWord.examples?.length ? (
+                {activeMode !== 'follow' && currentWord.examples?.length ? (
                   <View style={styles.exampleBox}>
                     <Text style={styles.exampleTitle}>例句</Text>
                     <Text style={styles.exampleText}>{currentWord.examples[0]?.en || ''}</Text>
