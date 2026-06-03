@@ -2,15 +2,22 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   buildCsv,
+  buildErrorReviewProgress,
+  buildMobileWrongWordsReviewQueue,
+  buildNextErrorReviewRoundWords,
   buildPracticeOptions,
   buildProgressSnapshot,
   buildQuickMemoryReviewQueuePath,
   buildQuickMemorySyncRecord,
   buildWrongWordRecord,
   evaluatePracticeAnswer,
+  filterMobileWrongWords,
+  isErrorReviewProgressForQueue,
   resolvePracticeQueueSource,
   stripHtml,
+  updateErrorReviewRoundResults,
   type MobileWord,
+  type WrongWord,
 } from '../src'
 
 const word: MobileWord = {
@@ -25,6 +32,22 @@ const word: MobileWord = {
   chapter_title: 'Chapter',
   examples: [],
   listening_confusables: [],
+}
+
+function makeWrongWord(overrides: Partial<WrongWord>): WrongWord {
+  return {
+    ...word,
+    dimension_states: {},
+    ebbinghaus_completed: false,
+    ebbinghaus_remaining: 0,
+    ebbinghaus_streak: 0,
+    last_error_at: '',
+    mistake_type: '',
+    pending_dimensions: [],
+    recognition_pass_streak: 0,
+    wrong_count: 1,
+    ...overrides,
+  }
 }
 
 describe('mobile practice engine', () => {
@@ -142,5 +165,60 @@ describe('mobile practice engine', () => {
     assert.ok(options.includes('塔'))
     assert.ok(!options.includes('力量；“power”的复数'))
     assert.ok(!options.includes('随机的'))
+  })
+
+  it('filters wrong-word recovery queues by mode and dimension', () => {
+    const words: WrongWord[] = [
+      makeWrongWord({ word: 'Alpha', mistake_type: 'recognition', wrong_count: 2 }),
+      makeWrongWord({ word: 'Beta', mistake_type: 'meaning', wrong_count: 3 }),
+      makeWrongWord({ word: 'Gamma', mistake_type: 'dictation', wrong_count: 1 }),
+    ]
+
+    assert.deepEqual(filterMobileWrongWords(words, { mode: 'quickmemory' }).map(item => item.word), ['Alpha'])
+    assert.deepEqual(filterMobileWrongWords(words, { dimension: 'meaning' }).map(item => item.word), ['Beta'])
+    assert.deepEqual(filterMobileWrongWords(words, { minWrongCount: 2 }).map(item => item.word), ['Alpha', 'Beta'])
+  })
+
+  it('builds manual selected wrong-word review queues in selected order', () => {
+    const words: WrongWord[] = [
+      makeWrongWord({ word: 'Alpha', mistake_type: 'recognition', wrong_count: 2 }),
+      makeWrongWord({ word: 'Beta', mistake_type: 'meaning', wrong_count: 3 }),
+      makeWrongWord({ word: 'Gamma', mistake_type: 'dictation', wrong_count: 1 }),
+    ]
+
+    const queue = buildMobileWrongWordsReviewQueue(words, { dimension: 'meaning' }, ['Gamma', 'Alpha'])
+    assert.deepEqual(queue.map(item => item.word), ['Gamma', 'Alpha'])
+  })
+
+  it('builds a next error-review round from only still-wrong words', () => {
+    const queue = [
+      { ...word, word: 'Alpha' },
+      { ...word, word: 'Beta' },
+      { ...word, word: 'Gamma' },
+    ]
+    const afterAlpha = updateErrorReviewRoundResults({}, 'Alpha', true)
+    const afterBeta = updateErrorReviewRoundResults(afterAlpha, 'Beta', false)
+    const results = updateErrorReviewRoundResults(afterBeta, 'Gamma', false)
+
+    assert.deepEqual(buildNextErrorReviewRoundWords(queue, results).map(item => item.word), ['Beta', 'Gamma'])
+  })
+
+  it('persists matching wrong-word review progress for resume', () => {
+    const queue = [
+      { ...word, word: 'Alpha' },
+      { ...word, word: 'Beta' },
+    ]
+    const progress = buildErrorReviewProgress({
+      correctCount: 1,
+      currentIndex: 1,
+      filters: { dimension: 'recognition' },
+      mode: 'errors',
+      queue,
+      results: { alpha: true },
+      wrongCount: 0,
+    })
+
+    assert.equal(isErrorReviewProgressForQueue(progress, queue, 'errors'), true)
+    assert.equal(isErrorReviewProgressForQueue(progress, [...queue].reverse(), 'errors'), false)
   })
 })

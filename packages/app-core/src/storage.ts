@@ -15,6 +15,7 @@ export const CORE_STORAGE_KEYS = {
   appSettings: 'mobile_app_settings',
   authUser: 'mobile_auth_user',
   pendingSync: 'mobile_pending_sync',
+  wrongWordReview: 'mobile_wrong_word_review',
   wrongWords: 'mobile_wrong_words',
 } as const
 

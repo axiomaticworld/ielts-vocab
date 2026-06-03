@@ -308,6 +308,8 @@ export function buildWrongWordRecord(word: MobileWord, mode: PracticeMode): Wron
     ebbinghaus_streak: 0,
     last_error_at: new Date().toISOString(),
     mistake_type: dimension,
+    pending_dimensions: [dimension],
+    dimension_states: {},
     recognition_pass_streak: 0,
     wrong_count: 1,
   }

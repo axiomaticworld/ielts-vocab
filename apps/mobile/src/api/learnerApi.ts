@@ -20,6 +20,7 @@ import {
   type MobileBook,
   type MobileChapter,
   type MobileWord,
+  type MobileWrongWordFilters,
   type PracticeMode,
   type QuickMemoryReviewQueuePathOptions,
   type WrongWord,
@@ -187,9 +188,17 @@ export async function createCustomBook(title: string, words: MobileWord[] | Wron
   })
 }
 
-export async function loadWrongWords(search = ''): Promise<WrongWord[]> {
+export async function loadWrongWords(search = '', filters: MobileWrongWordFilters = {}): Promise<WrongWord[]> {
   const payload = await mobileApiClient.json<{ words?: unknown[] }>(
-    `/api/ai/wrong-words${query({ details: 'compact', search })}`,
+    `/api/ai/wrong-words${query({
+      details: 'compact',
+      dim: filters.dimension === 'all' ? undefined : filters.dimension,
+      maxWrong: filters.maxWrongCount,
+      minWrong: filters.minWrongCount,
+      mode: filters.mode === 'all' ? undefined : filters.mode,
+      scope: filters.scope,
+      search,
+    })}`,
   )
   return parseArray(WrongWordSchema, payload.words)
 }
