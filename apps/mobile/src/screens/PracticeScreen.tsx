@@ -3,12 +3,16 @@ import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { CheckCircle2, ChevronRight, Mic, XCircle } from 'lucide-react-native'
 import {
   PRACTICE_MODE_LABELS,
+  buildMobileWrongWordsReviewQueue,
+  buildNextErrorReviewRoundWords,
   buildPracticeOptions,
   buildProgressSnapshot,
   buildQuickMemorySyncRecord,
   buildWrongWordRecord,
   evaluatePracticeAnswer,
   resolvePracticeQueueSource,
+  updateErrorReviewRoundResults,
+  type ErrorReviewRoundResults,
   type MobileBook,
   type MobileChapter,
   type MobileWord,
@@ -22,37 +26,18 @@ import type { Navigate, NavigateOptions } from '../navigation/types'
 import { playRemoteAudio } from '../native/NativeAudioPlayer'
 import { useMobileSpeechRecognition } from '../speech/useMobileSpeechRecognition'
 import { theme } from '../theme'
+import { getErrorReviewFilters, hydrateErrorReviewProgress, persistErrorReviewProgress } from './errorReviewProgressStorage'
 import { PracticeCompletionCard, PracticeEntryPanel, type PracticeEntry, type PracticeEntryKey } from './PracticeEntryPanel'
+import { entryForMode, initialDueReviewRequested, initialEntry, isRecognitionReviewMode, PRACTICE_MODE_HINTS, PRACTICE_MODES, searchableText } from './PracticeScreen.helpers'
+import { PracticeStatusHeader } from './PracticeStatusHeader'
 import { styles } from './PracticeScreen.styles'
-import {
-  entryForMode,
-  entryLabel,
-  initialDueReviewRequested,
-  initialEntry,
-  isRecognitionReviewMode,
-  scoreLabel,
-  searchableText,
-} from './practiceScreenSelectors'
 import { completePracticeSession, hydratePracticeSession, persistPracticeSessionProgress } from './practiceSessionLifecycle'
 import { practiceSessionDependencies } from './practiceSessionLifecycleRuntime'
 
-const MODES: PracticeMode[] = ['smart', 'quickmemory', 'test', 'listening', 'meaning', 'dictation', 'follow', 'radio', 'errors']
 const QUICK_MEMORY_REVIEW_LIMIT = 10
 const QUICK_MEMORY_REVIEW_WINDOW_DAYS = 3
 
 type SheetState = 'mode' | 'scope' | null
-
-const MODE_HINTS: Record<PracticeMode, string> = {
-  smart: '按当前词书和复习状态智能出题',
-  quickmemory: '快速认词，写入复习队列',
-  test: '听音判断熟悉度，写入复习队列',
-  listening: '听音辨义，训练反应速度',
-  meaning: '看中文，主动拼出英文',
-  dictation: '听音写词，抓住拼写细节',
-  follow: '跟读发音，记录语音表现',
-  radio: '连续播放，适合碎片复习',
-  errors: '读取错词队列，直接开始清理',
-}
 
 export function PracticeScreen({ navigate, options }: { navigate: Navigate; options?: NavigateOptions }) {
   const { start, state: speechState, stop } = useMobileSpeechRecognition('en')
@@ -71,6 +56,8 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
   const [answer, setAnswer] = useState('')
   const [correctCount, setCorrectCount] = useState(0)
   const [wrongCount, setWrongCount] = useState(0)
+  const [errorRoundResults, setErrorRoundResults] = useState<ErrorReviewRoundResults>({})
+  const [errorReviewRound, setErrorReviewRound] = useState(1)
   const [feedback, setFeedback] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -85,6 +72,9 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
   )
   const currentWord = queue[index]
   const completed = queue.length > 0 && index >= queue.length
+  const errorReviewRetryWords = mode === 'errors' && completed
+    ? buildNextErrorReviewRoundWords(queue, errorRoundResults)
+    : []
   const optionsForWord = useMemo(() => currentWord ? buildPracticeOptions(currentWord, queue) : [], [currentWord, queue])
   const scopeTerm = scopeQuery.trim().toLowerCase()
   const filteredBooks = useMemo(
@@ -108,6 +98,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
         if (!initialBookId) {
           if (options?.mode) setEntry(initialEntry(options))
           setDueReviewRequested(shouldLoadDueReview)
+          if (options?.mode === 'errors') await startPractice('errors', '', null, false)
           if (shouldLoadDueReview) await startPractice(options?.mode ?? 'quickmemory', '', null, true)
           return
         }
@@ -120,6 +111,8 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
         if (options?.chapterId) {
           setChapterId(options.chapterId)
           await startPractice(options.mode ?? 'quickmemory', initialBookId, options.chapterId, shouldLoadDueReview)
+        } else if (options?.mode === 'errors') {
+          await startPractice('errors', initialBookId, null, false)
         } else if (shouldLoadDueReview) {
           await startPractice(options?.mode ?? 'quickmemory', options?.bookId ? initialBookId : '', null, true)
         }
@@ -140,12 +133,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     setChapters(await loadChapters(nextBookId))
   }
 
-  async function startPractice(
-    nextMode = mode,
-    nextBookId = bookId,
-    nextChapterId = chapterId,
-    nextDueReviewRequested = dueReviewRequested,
-  ) {
+  async function startPractice(nextMode = mode, nextBookId = bookId, nextChapterId = chapterId, nextDueReviewRequested = dueReviewRequested) {
     setLoading(true)
     setError('')
     setFeedback('')
@@ -155,8 +143,13 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
         mode: nextMode,
       })
       if (nextQueueSource === 'chapter' && !nextBookId) throw new Error('请先选择练习范围')
+      const errorFilters = getErrorReviewFilters(options)
       const words = nextQueueSource === 'errors'
-        ? await loadWrongWords()
+        ? buildMobileWrongWordsReviewQueue(
+          await loadWrongWords('', errorFilters),
+          errorFilters,
+          options?.selectedWrongWords ?? [],
+        )
         : nextQueueSource === 'due-review'
           ? await loadQuickMemoryReviewQueue({
             bookId: nextBookId || null,
@@ -166,22 +159,37 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
             withinDays: QUICK_MEMORY_REVIEW_WINDOW_DAYS,
           })
           : await loadChapterWords(nextBookId, nextChapterId)
-      const session = await hydratePracticeSession({
-        bookId: nextBookId,
-        chapterId: nextChapterId,
-        dependencies: practiceSessionDependencies,
-        mode: nextMode,
-        queueSource: nextQueueSource,
-        words,
-      })
+      const savedErrorProgress = nextQueueSource === 'errors'
+        ? await hydrateErrorReviewProgress(words, nextMode)
+        : null
+      const session = savedErrorProgress
+        ? {
+          chapterBaseline: { correctCount: 0, wrongCount: 0 },
+          correctCount: savedErrorProgress.correctCount,
+          index: savedErrorProgress.currentIndex,
+          queue: words,
+          resumed: true,
+          wrongCount: savedErrorProgress.wrongCount,
+        }
+        : await hydratePracticeSession({
+          bookId: nextBookId,
+          chapterId: nextChapterId,
+          dependencies: practiceSessionDependencies,
+          mode: nextMode,
+          queueSource: nextQueueSource,
+          words,
+        })
       setQueueSource(nextQueueSource)
       setQueue(session.queue)
       setIndex(session.index)
       setCorrectCount(session.correctCount)
       setWrongCount(session.wrongCount)
+      setErrorRoundResults(savedErrorProgress?.results ?? {})
+      setErrorReviewRound(savedErrorProgress?.round ?? 1)
       chapterBaselineRef.current = session.chapterBaseline
       setAnswer('')
       if (!words.length && nextQueueSource === 'due-review') setFeedback('暂无到期复习词，可以切换范围或稍后再来。')
+      else if (!words.length && nextQueueSource === 'errors') setFeedback('当前筛选没有待恢复错词，可以换一个维度或模式。')
       else if (session.resumed) setFeedback('已恢复未完成练习')
       startedAtRef.current = Date.now()
     } catch (err) {
@@ -253,8 +261,12 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     const nextCorrect = correctCount + (result.correct ? 1 : 0)
     const nextWrong = wrongCount + (result.correct ? 0 : 1)
     const nextIndex = index + 1
+    const nextErrorRoundResults = mode === 'errors'
+      ? updateErrorReviewRoundResults(errorRoundResults, currentWord.word, result.correct)
+      : errorRoundResults
     setCorrectCount(nextCorrect)
     setWrongCount(nextWrong)
+    if (mode === 'errors') setErrorRoundResults(nextErrorRoundResults)
     setFeedback(result.feedback)
     setAnswer('')
     if (!result.correct || value === 'unknown') await syncWrongWord(buildWrongWordRecord(currentWord, mode)).catch(() => undefined)
@@ -281,7 +293,41 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
         wordCount: queue.length,
       }).catch(() => undefined)
     }
+    if (queueSource === 'errors') {
+      await persistErrorReviewProgress({
+        correct: nextCorrect,
+        current: nextIndex,
+        mode,
+        options,
+        results: nextErrorRoundResults,
+        round: errorReviewRound,
+        wrong: nextWrong,
+        words: queue,
+      })
+    }
     setIndex(nextIndex)
+  }
+
+  async function startNextErrorReviewRound() {
+    const nextRound = errorReviewRound + 1
+    setQueue(errorReviewRetryWords)
+    setIndex(0)
+    setCorrectCount(0)
+    setWrongCount(0)
+    setErrorRoundResults({})
+    setErrorReviewRound(nextRound)
+    setFeedback('已生成下一轮，仅包含本轮仍答错的词。')
+    startedAtRef.current = Date.now()
+    await persistErrorReviewProgress({
+      correct: 0,
+      current: 0,
+      mode,
+      options,
+      results: {},
+      round: nextRound,
+      wrong: 0,
+      words: errorReviewRetryWords,
+    })
   }
 
   const progress = queue.length ? Math.min(100, (index / queue.length) * 100) : 0
@@ -309,30 +355,19 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
           <PracticeEntryPanel onOpen={item => void openEntry(item)} />
         ) : (
           <>
-            <View style={styles.practiceStatusBar}>
-              <Pressable accessibilityLabel="切换练习词书" accessibilityRole="button" onPress={() => setSheet('scope')} style={styles.statusSegment} testID="practice.scope.book">
-                <Text style={styles.statusLabel}>词书</Text>
-                <Text numberOfLines={1} style={styles.statusValue}>{selectedBook?.title || '选择词书'}</Text>
-              </Pressable>
-              <Pressable accessibilityLabel="切换练习章节" accessibilityRole="button" onPress={() => setSheet('scope')} style={styles.statusSegment} testID="practice.scope.chapter">
-                <Text style={styles.statusLabel}>章节</Text>
-                <Text numberOfLines={1} style={styles.statusValue}>{chapterLabel}</Text>
-              </Pressable>
-              <Pressable accessibilityLabel="切换练习模式" accessibilityRole="button" onPress={() => setSheet('mode')} style={styles.statusSegment} testID="practice.mode.switch">
-                <Text style={styles.statusLabel}>模式</Text>
-                <Text numberOfLines={1} style={styles.statusValue}>{entryLabel(entry, mode)}</Text>
-              </Pressable>
-            </View>
-            <View style={styles.progressMini}>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${progress}%` }]} />
-              </View>
-              <View style={styles.statRow}>
-                <Pill label={`${index}/${queue.length || 0}`} />
-                <Pill label={scoreLabel('对', correctCount)} />
-                <Pill label={scoreLabel('错', wrongCount)} />
-              </View>
-            </View>
+            <PracticeStatusHeader
+              chapterLabel={chapterLabel}
+              correctCount={correctCount}
+              entry={entry}
+              mode={mode}
+              onOpenMode={() => setSheet('mode')}
+              onOpenScope={() => setSheet('scope')}
+              progress={progress}
+              queueIndex={index}
+              queueLength={queue.length}
+              selectedBookTitle={selectedBook?.title}
+              wrongCount={wrongCount}
+            />
             {currentWord ? (
               <Card style={styles.workbench}>
                 <View style={styles.workbenchTop}>
@@ -389,11 +424,19 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                 ) : null}
               </Card>
             ) : completed ? (
-              <PracticeCompletionCard
-                onChangeScope={() => setSheet('scope')}
-                onRestart={() => void startPractice(mode, bookId, chapterId)}
-                wordCount={queue.length}
-              />
+              <>
+                <PracticeCompletionCard
+                  onChangeScope={() => setSheet('scope')}
+                  onRestart={() => void startPractice(mode, bookId, chapterId)}
+                  wordCount={queue.length} />
+                {errorReviewRetryWords.length > 0 ? (
+                  <Card>
+                    <Heading>下一轮错词</Heading>
+                    <Meta>还有 {errorReviewRetryWords.length} 个词本轮仍答错，可以只复习这些词。</Meta>
+                    <PrimaryButton label="复习仍错词" onPress={() => void startNextErrorReviewRound()} testID="practice.errors.nextRound" />
+                  </Card>
+                ) : null}
+              </>
             ) : (
               <Card>
                 <Heading>{emptyTitle}</Heading>
@@ -415,7 +458,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                 <Text style={styles.sheetTitle}>切换练习模式</Text>
                 <Text style={styles.sheetSubtitle}>沿用当前范围，切换后直接重新出题。</Text>
                 <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
-                  {MODES.map(item => {
+                  {PRACTICE_MODES.map(item => {
                     const active = item === mode
                     return (
                       <Pressable key={item} accessibilityLabel={`练习模式-${PRACTICE_MODE_LABELS[item]}`} accessibilityRole="button" onPress={() => void chooseMode(item)} style={[styles.sheetRow, active ? styles.sheetRowActive : null]} testID={`practice.mode.${item}`}>
@@ -424,7 +467,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                         </View>
                         <View style={styles.sheetBody}>
                           <Text style={styles.sheetLabel}>{PRACTICE_MODE_LABELS[item]}</Text>
-                          <Text style={styles.sheetMeta}>{MODE_HINTS[item]}</Text>
+                          <Text style={styles.sheetMeta}>{PRACTICE_MODE_HINTS[item]}</Text>
                         </View>
                         <ChevronRight color={theme.colors.textTertiary} size={18} />
                       </Pressable>
