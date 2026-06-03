@@ -193,6 +193,7 @@ export function usePracticeScopedWordsLoader({
     setVocabulary,
     setWordStatuses,
     setWrongCount,
+    settings,
     settings.reviewInterval,
     settings.reviewLimit,
     settings.reviewLimitCustomized,
@@ -200,6 +201,7 @@ export function usePracticeScopedWordsLoader({
     uniqueAnsweredRef,
     vocabRef,
     wordsLearnedBaselineRef,
+    listeningOptionPoolRef,
   ])
 }
 

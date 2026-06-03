@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { useSpeechRecognition } from '../../../hooks/useSpeechRecognition'
+import { useSpeechRecognition } from '../../../hooks'
 import { loadSmartStats, chooseSmartDimension } from '../../../lib/smartMode'
 import { readWrongWordsFromStorage } from '../../../features/vocabulary/wrongWordsStore'
 import { buildLearnerProfile, mergeLearnerProfileWithBackend } from '../../../features/practice/learnerProfile'
@@ -263,7 +263,7 @@ export function usePracticePageEffects({
     }
   }, [
     backendLearnerProfile,
-    currentWord?.word,
+    currentWord, currentWord?.word,
     mode,
     optionsWordKey,
     optionsCount,
