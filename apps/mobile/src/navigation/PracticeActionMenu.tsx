@@ -1,8 +1,10 @@
 import React from 'react'
-import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Animated, Easing, Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native'
 import { PRACTICE_MODE_LABELS, type PracticeMode } from '@ielts-vocab/app-core'
+import { loadLearningStats } from '../api/learnerApi'
 import { Sticker } from '../components/stickers'
 import type { StickerKey } from '../components/stickers/catalog'
+import { todayMasteredWordsFromStats } from '../lib/learningStats'
 import { theme } from '../theme'
 import { PracticeCenterIcon } from './PracticeCenterIcon'
 
@@ -11,7 +13,7 @@ type PracticeActionMenuProps = {
   onSelect: (mode: PracticeMode) => void
 }
 
-const shortcutModes: PracticeMode[] = ['listening', 'smart', 'follow', 'dictation', 'meaning', 'errors', 'quickmemory', 'radio']
+const shortcutModes: PracticeMode[] = ['test', 'listening', 'follow', 'quickmemory', 'dictation', 'meaning', 'smart', 'radio']
 const quickActionLabels: Record<PracticeMode, string> = {
   dictation: '听写',
   errors: '错词',
@@ -34,7 +36,8 @@ const modeStickerKeys: Record<PracticeMode, StickerKey> = {
   smart: 'studyBadgePractice',
   test: 'tapePin',
 }
-const centerActionSource = require('../assets/stickers/tab-practice-edit-loop.png')
+const practiceHeroTutor = require('../assets/stickers/practice-hero-tutor.png')
+const practiceStatRibbon = require('../assets/stickers/practice-stat-ribbon.png')
 const ORBIT_ACTION_WIDTH = 64
 const TRIANGLE_NODE_SPACING = 88
 const TRIANGLE_ROW_HEIGHT = Math.round((TRIANGLE_NODE_SPACING * Math.sqrt(3)) / 2)
@@ -49,14 +52,14 @@ function triangleNode(mode: PracticeMode, rowFromBase: number, columnOffset: num
 }
 
 const orbitLayout: Array<{ bottom: number; mode: PracticeMode; translateX: number }> = [
-  triangleNode('quickmemory', 1, -1.5),
-  triangleNode('radio', 1, 1.5),
-  triangleNode('dictation', 2, -1),
-  triangleNode('meaning', 2, 0),
-  triangleNode('errors', 2, 1),
-  triangleNode('smart', 3, -0.5),
+  triangleNode('smart', 1, -1),
+  triangleNode('radio', 1, 1),
+  triangleNode('quickmemory', 2, -1),
+  triangleNode('dictation', 2, 0),
+  triangleNode('meaning', 2, 1),
+  triangleNode('listening', 3, -0.5),
   triangleNode('follow', 3, 0.5),
-  triangleNode('listening', 4, 0),
+  triangleNode('test', 4, 0),
 ]
 const LEFT_TO_RIGHT_REVEAL_ORDER = new Map(
   [...orbitLayout]
@@ -109,6 +112,7 @@ function modeRevealStyle(mode: PracticeMode, reveal: Animated.Value) {
 export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuProps) {
   const reveal = React.useRef(new Animated.Value(0)).current
   const closingRef = React.useRef(false)
+  const [todayMasteredWords, setTodayMasteredWords] = React.useState(0)
 
   React.useEffect(() => {
     const opening = Animated.timing(reveal, {
@@ -120,6 +124,20 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
     opening.start()
     return () => opening.stop()
   }, [reveal])
+
+  React.useEffect(() => {
+    let active = true
+    loadLearningStats()
+      .then(stats => {
+        if (active) setTodayMasteredWords(todayMasteredWordsFromStats(stats))
+      })
+      .catch(() => {
+        if (active) setTodayMasteredWords(0)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   const dismissWithAnimation = React.useCallback(() => {
     if (closingRef.current) return
@@ -163,9 +181,25 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
         style={[styles.hero, { opacity: heroOpacity, transform: [{ translateY: heroTranslateY }] }]}
         testID="practice.quickAction.content"
       >
-        <Image resizeMode="contain" source={centerActionSource} style={styles.heroIcon} />
-        <Text style={styles.eyebrow}>练习快捷入口</Text>
-        <Text style={styles.title}>选择一个练习模式开始</Text>
+        <View style={styles.heroScene}>
+          <ImageBackground resizeMode="contain" source={practiceStatRibbon} style={styles.heroRibbon}>
+            <View style={styles.ribbonTextWrap}>
+              <Text style={styles.ribbonText}>
+                今天已掌握 <Text style={styles.ribbonNumber}>{Math.max(0, Math.round(todayMasteredWords))}</Text> 词啦~
+              </Text>
+            </View>
+          </ImageBackground>
+          <Image resizeMode="contain" source={practiceHeroTutor} style={styles.heroTutorCentered} />
+          <View style={styles.modePrompt} testID="practice.quickAction.modePrompt">
+            <View style={styles.modePromptRule} />
+            <View style={styles.modePromptBadge}>
+              <View style={styles.modePromptDot} />
+              <Text style={styles.modePromptText}>模式选择</Text>
+              <View style={styles.modePromptDot} />
+            </View>
+            <View style={styles.modePromptRule} />
+          </View>
+        </View>
       </Animated.View>
 
       <View pointerEvents="box-none" style={styles.orbitStage}>
@@ -249,20 +283,18 @@ const styles = StyleSheet.create({
   centerButtonPressed: {
     opacity: 0.82,
   },
-  eyebrow: {
-    color: '#D8662B',
-    fontSize: 13,
-    fontWeight: '900',
-  },
   hero: {
     alignItems: 'center',
-    gap: 8,
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: 80,
+    paddingTop: 135,
   },
-  heroIcon: {
-    height: 90,
-    width: 90,
+  heroScene: {
+    alignItems: 'center',
+  },
+  heroTutorCentered: {
+    height: 246,
+    marginTop: -theme.spacing.xs,
+    width: 214,
   },
   iconShell: {
     alignItems: 'center',
@@ -289,6 +321,48 @@ const styles = StyleSheet.create({
     gap: 3,
     width: ORBIT_ACTION_WIDTH,
   },
+  modePrompt: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: -theme.spacing.xs,
+  },
+  modePromptBadge: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 246, 229, 0.96)',
+    borderColor: '#E7A068',
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { height: 3, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 7,
+    elevation: 2,
+  },
+  modePromptDot: {
+    backgroundColor: '#F09B51',
+    borderRadius: 3,
+    height: 6,
+    width: 6,
+  },
+  modePromptRule: {
+    backgroundColor: '#E7A068',
+    borderRadius: theme.radius.pill,
+    height: 2,
+    opacity: 0.7,
+    width: 34,
+  },
+  modePromptText: {
+    color: '#7B5541',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 1.4,
+    lineHeight: 18,
+  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 35,
@@ -296,6 +370,33 @@ const styles = StyleSheet.create({
   overlayBackground: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#FFFDF0',
+  },
+  ribbonNumber: {
+    color: '#C3551C',
+    fontSize: 32,
+    fontWeight: '900',
+  },
+  ribbonText: {
+    color: '#6E4934',
+    fontSize: 16,
+    fontWeight: '900',
+    lineHeight: 38,
+    textAlign: 'center',
+  },
+  ribbonTextWrap: {
+    alignItems: 'center',
+    height: 58,
+    justifyContent: 'center',
+    paddingHorizontal: 76,
+    paddingTop: 2,
+    width: '100%',
+  },
+  heroRibbon: {
+    alignItems: 'center',
+    height: 88,
+    justifyContent: 'center',
+    marginBottom: -theme.spacing.md,
+    width: 336,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -318,11 +419,5 @@ const styles = StyleSheet.create({
     left: 0,
     position: 'absolute',
     right: 0,
-  },
-  title: {
-    color: theme.colors.text,
-    fontSize: 24,
-    fontWeight: '900',
-    textAlign: 'center',
   },
 })
