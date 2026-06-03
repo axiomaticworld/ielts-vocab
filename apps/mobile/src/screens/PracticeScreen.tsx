@@ -4,41 +4,30 @@ import { CheckCircle2, Mic, XCircle } from 'lucide-react-native'
 import {
   PRACTICE_MODE_LABELS,
   SMART_PRACTICE_DIMENSION_LABELS,
-  buildMobileWrongWordsReviewQueue,
   buildNextErrorReviewRoundWords,
   buildPracticeOptions,
-  buildProgressSnapshot,
-  buildQuickMemorySyncRecord,
-  buildWrongWordRecord,
-  evaluatePracticeAnswer,
-  resolvePracticeQueueSource,
   resolveSmartPracticeMode,
-  updateErrorReviewRoundResults,
-  type ErrorReviewRoundResults,
   type MobileBook,
   type MobileChapter,
-  type MobileWord,
   type PracticeMode,
-  type PracticeQueueSource,
 } from '@ielts-vocab/app-core'
-import { loadBooks, loadChapterWords, loadChapters, loadQuickMemoryReviewQueue, loadWrongWords, syncQuickMemory, syncWrongWord } from '../api/learnerApi'
 import { Card, Field, Heading, Meta, Pill, PrimaryButton, ScreenScroll, StatusText } from '../components/primitives'
 import type { Navigate, NavigateOptions } from '../navigation/types'
 import { useMobileSpeechRecognition } from '../speech/useMobileSpeechRecognition'
 import { theme } from '../theme'
-import { getErrorReviewFilters, hydrateErrorReviewProgress, persistErrorReviewProgress } from './errorReviewProgressStorage'
+import { hydrateErrorReviewProgress, persistErrorReviewProgress } from './errorReviewProgressStorage'
 import { PracticeCompletionCard, PracticeEntryPanel, type PracticeEntry, type PracticeEntryKey } from './PracticeEntryPanel'
-import { buildDictationFeedback, entryForMode, initialDueReviewRequested, initialEntry, isRecognitionReviewMode, searchableText } from './PracticeScreen.helpers'
+import { entryForMode, initialDueReviewRequested, initialEntry, isRecognitionReviewMode, searchableText } from './PracticeScreen.helpers'
 import { PracticeScopeSheet } from './PracticeScopeSheet'
 import { PracticeStatusHeader } from './PracticeStatusHeader'
 import { styles } from './PracticeScreen.styles'
-import { completePracticeSession, hydratePracticeSession, persistPracticeSessionProgress } from './practiceSessionLifecycle'
+import { hydratePracticeSession } from './practiceSessionLifecycle'
+import { loadBookChapters, loadPracticeBootstrap, loadPracticeQueue } from './practiceDataLoading'
 import { practiceSessionDependencies } from './practiceSessionLifecycleRuntime'
+import { usePracticeAnswerSubmission } from './usePracticeAnswerSubmission'
 import { useMobileSmartPractice } from './useMobileSmartPractice'
 import { usePracticeAudioModes } from './usePracticeAudioModes'
-
-const QUICK_MEMORY_REVIEW_LIMIT = 10
-const QUICK_MEMORY_REVIEW_WINDOW_DAYS = 3
+import { usePracticeSessionState } from './usePracticeSessionState'
 
 type SheetState = 'mode' | 'scope' | null
 
@@ -48,26 +37,38 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
   const [entry, setEntry] = useState<PracticeEntryKey | null>(initialEntry(options))
   const [mode, setMode] = useState<PracticeMode>(options?.mode ?? 'quickmemory')
   const [dueReviewRequested, setDueReviewRequested] = useState(initialDueReviewRequested(options))
-  const [queueSource, setQueueSource] = useState<PracticeQueueSource>('chapter')
   const [sheet, setSheet] = useState<SheetState>(null)
   const [books, setBooks] = useState<MobileBook[]>([])
   const [chapters, setChapters] = useState<MobileChapter[]>([])
   const [bookId, setBookId] = useState(options?.bookId ?? '')
   const [chapterId, setChapterId] = useState<string | number | null>(options?.chapterId ?? null)
   const [scopeQuery, setScopeQuery] = useState('')
-  const [queue, setQueue] = useState<MobileWord[]>([])
-  const [index, setIndex] = useState(0)
-  const [answer, setAnswer] = useState('')
-  const [correctCount, setCorrectCount] = useState(0)
-  const [wrongCount, setWrongCount] = useState(0)
-  const [errorRoundResults, setErrorRoundResults] = useState<ErrorReviewRoundResults>({})
-  const [errorReviewRound, setErrorReviewRound] = useState(1)
-  const [feedback, setFeedback] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const {
+    answer,
+    applyHydratedSession,
+    chapterBaselineRef,
+    correctCount,
+    error,
+    errorReviewRound,
+    errorRoundResults,
+    feedback,
+    index,
+    loading,
+    queue,
+    queueSource,
+    setAnswer,
+    setCorrectCount,
+    setError,
+    setErrorRoundResults,
+    setFeedback,
+    setIndex,
+    setLoading,
+    setWrongCount,
+    startedAtRef,
+    startErrorReviewRound,
+    wrongCount,
+  } = usePracticeSessionState()
   const cleanupRef = useRef<(() => void) | null>(null)
-  const chapterBaselineRef = useRef({ correctCount: 0, wrongCount: 0 })
-  const startedAtRef = useRef(Date.now())
 
   const selectedBook = useMemo(() => books.find(book => String(book.id) === bookId) ?? null, [bookId, books])
   const selectedChapter = useMemo(
@@ -95,11 +96,10 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
   useEffect(() => {
     let active = true
     setLoading(true)
-    loadBooks()
-      .then(async nextBooks => {
+    loadPracticeBootstrap(options)
+      .then(async ({ books: nextBooks, chapters: nextChapters, initialBookId }) => {
         if (!active) return
         setBooks(nextBooks)
-        const initialBookId = options?.bookId || String(nextBooks[0]?.id ?? '')
         const shouldLoadDueReview = initialDueReviewRequested(options)
         if (!initialBookId) {
           if (options?.mode) setEntry(initialEntry(options))
@@ -109,8 +109,6 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
           return
         }
         setBookId(initialBookId)
-        const nextChapters = await loadChapters(initialBookId)
-        if (!active) return
         setChapters(nextChapters)
         if (options?.bookId || options?.mode) setEntry(initialEntry(options))
         setDueReviewRequested(shouldLoadDueReview)
@@ -136,7 +134,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
   async function selectBook(nextBookId: string) {
     setBookId(nextBookId)
     setChapterId(null)
-    setChapters(await loadChapters(nextBookId))
+    setChapters(await loadBookChapters(nextBookId))
   }
 
   async function startPractice(nextMode = mode, nextBookId = bookId, nextChapterId = chapterId, nextDueReviewRequested = dueReviewRequested) {
@@ -144,28 +142,14 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     setError('')
     setFeedback('')
     try {
-      const nextQueueSource = resolvePracticeQueueSource({
+      const { queueSource: nextQueueSource, words } = await loadPracticeQueue({
+        bookId: nextBookId,
+        chapterId: nextChapterId,
         dueReviewRequested: nextDueReviewRequested,
         mode: nextMode,
+        options,
+        refreshSmartPracticeContext,
       })
-      if (nextQueueSource === 'chapter' && !nextBookId) throw new Error('请先选择练习范围')
-      const errorFilters = getErrorReviewFilters(options)
-      if (nextMode === 'smart') await refreshSmartPracticeContext()
-      const words = nextQueueSource === 'errors'
-        ? buildMobileWrongWordsReviewQueue(
-          await loadWrongWords('', errorFilters),
-          errorFilters,
-          options?.selectedWrongWords ?? [],
-        )
-        : nextQueueSource === 'due-review'
-          ? await loadQuickMemoryReviewQueue({
-            bookId: nextBookId || null,
-            chapterId: nextChapterId,
-            limit: QUICK_MEMORY_REVIEW_LIMIT,
-            offset: 0,
-            withinDays: QUICK_MEMORY_REVIEW_WINDOW_DAYS,
-          })
-          : await loadChapterWords(nextBookId, nextChapterId)
       const savedErrorProgress = nextQueueSource === 'errors'
         ? await hydrateErrorReviewProgress(words, nextMode)
         : null
@@ -186,19 +170,10 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
           queueSource: nextQueueSource,
           words,
         })
-      setQueueSource(nextQueueSource)
-      setQueue(session.queue)
-      setIndex(session.index)
-      setCorrectCount(session.correctCount)
-      setWrongCount(session.wrongCount)
-      setErrorRoundResults(savedErrorProgress?.results ?? {})
-      setErrorReviewRound(savedErrorProgress?.round ?? 1)
-      chapterBaselineRef.current = session.chapterBaseline
-      setAnswer('')
+      applyHydratedSession({ queueSource: nextQueueSource, savedErrorProgress, session })
       if (!words.length && nextQueueSource === 'due-review') setFeedback('暂无到期复习词，可以切换范围或稍后再来。')
       else if (!words.length && nextQueueSource === 'errors') setFeedback('当前筛选没有待恢复错词，可以换一个维度或模式。')
       else if (session.resumed) setFeedback('已恢复未完成练习')
-      startedAtRef.current = Date.now()
     } catch (err) {
       setError(err instanceof Error ? err.message : '练习加载失败')
     } finally {
@@ -271,76 +246,40 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     setFeedback,
   })
 
+  const submitAnswer = usePracticeAnswerSubmission({
+    activeMode,
+    bookId,
+    chapterBaselineRef,
+    chapterId,
+    correctCount,
+    currentWord,
+    errorReviewRound,
+    errorRoundResults,
+    index,
+    mode,
+    options,
+    playWord,
+    queue,
+    queueSource,
+    recordSmartAnswer,
+    setAnswer,
+    setCorrectCount,
+    setErrorRoundResults,
+    setFeedback,
+    setIndex,
+    setWrongCount,
+    smartDimension,
+    startedAtRef,
+    wrongCount,
+  })
+
   async function submit(value = answer) {
-    if (!currentWord) return
-    const currentSmartDimension = mode === 'smart' ? smartDimension : undefined
-    const result = evaluatePracticeAnswer(currentWord, mode, value, { smartDimension: currentSmartDimension })
-    if (mode === 'follow' && !value.trim()) {
-      setFeedback(result.feedback)
-      return
-    }
-    const nextCorrect = correctCount + (result.correct ? 1 : 0)
-    const nextWrong = wrongCount + (result.correct ? 0 : 1)
-    const nextIndex = index + 1
-    const nextErrorRoundResults = mode === 'errors'
-      ? updateErrorReviewRoundResults(errorRoundResults, currentWord.word, result.correct)
-      : errorRoundResults
-    setCorrectCount(nextCorrect)
-    setWrongCount(nextWrong)
-    if (mode === 'errors') setErrorRoundResults(nextErrorRoundResults)
-    setFeedback(activeMode === 'dictation' && !result.correct ? buildDictationFeedback(value, result.expected) : result.feedback)
-    setAnswer('')
-    if (activeMode === 'dictation' && !result.correct) void playWord('auto')
-    if (mode === 'smart' && currentSmartDimension) await recordSmartAnswer({ bookId, chapterId, correct: result.correct, dimension: currentSmartDimension, word: currentWord })
-    if (!result.correct || value === 'unknown') await syncWrongWord(buildWrongWordRecord(currentWord, mode, currentSmartDimension)).catch(() => undefined)
-    if (mode === 'quickmemory' || mode === 'test') await syncQuickMemory(buildQuickMemorySyncRecord(currentWord, value === 'known')).catch(() => undefined)
-    const snapshot = buildProgressSnapshot({ correctCount: nextCorrect, currentIndex: nextIndex, queue, wrongCount: nextWrong })
-    const persistedSnapshot = await persistPracticeSessionProgress({
-      bookId,
-      chapterBaseline: chapterBaselineRef.current,
-      chapterId,
-      dependencies: practiceSessionDependencies,
-      mode,
-      queueSource,
-      snapshot,
-    }).catch(() => null)
-    if (snapshot.isCompleted) {
-      await completePracticeSession({
-        bookId,
-        chapterId,
-        dependencies: practiceSessionDependencies,
-        durationSeconds: Math.round((Date.now() - startedAtRef.current) / 1000),
-        mode,
-        queueSource,
-        snapshot: persistedSnapshot ?? snapshot,
-        wordCount: queue.length,
-      }).catch(() => undefined)
-    }
-    if (queueSource === 'errors') {
-      await persistErrorReviewProgress({
-        correct: nextCorrect,
-        current: nextIndex,
-        mode,
-        options,
-        results: nextErrorRoundResults,
-        round: errorReviewRound,
-        wrong: nextWrong,
-        words: queue,
-      })
-    }
-    setIndex(nextIndex)
+    await submitAnswer(value)
   }
 
   async function startNextErrorReviewRound() {
     const nextRound = errorReviewRound + 1
-    setQueue(errorReviewRetryWords)
-    setIndex(0)
-    setCorrectCount(0)
-    setWrongCount(0)
-    setErrorRoundResults({})
-    setErrorReviewRound(nextRound)
-    setFeedback('已生成下一轮，仅包含本轮仍答错的词。')
-    startedAtRef.current = Date.now()
+    startErrorReviewRound({ round: nextRound, words: errorReviewRetryWords })
     await persistErrorReviewProgress({
       correct: 0,
       current: 0,
