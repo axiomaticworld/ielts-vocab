@@ -106,6 +106,11 @@ export async function loadBookProgressMap(): Promise<Record<string, ProgressSnap
   return normalizeProgressMap(payload.progress, 'book_id')
 }
 
+export async function loadBookProgress(bookId: string): Promise<ProgressSnapshot | null> {
+  const payload = await mobileApiClient.json<{ progress?: unknown }>(`/api/books/progress/${bookId}`)
+  return normalizeProgressMap(payload.progress ? { [bookId]: payload.progress } : null, 'book_id')[bookId] ?? null
+}
+
 export async function addMyBook(bookId: string) {
   return mobileApiClient.json('/api/books/my', {
     method: 'POST',
@@ -123,6 +128,13 @@ export async function loadChapterProgressMap(bookId: string): Promise<Record<str
     `/api/books/${bookId}/chapters/progress`,
   )
   return normalizeProgressMap(payload.chapter_progress ?? payload.progress, 'chapter_id')
+}
+
+export async function loadChapterProgress(
+  bookId: string,
+  chapterId: string | number,
+): Promise<ProgressSnapshot | null> {
+  return (await loadChapterProgressMap(bookId))[String(chapterId)] ?? null
 }
 
 export async function loadChapterWords(bookId: string, chapterId?: string | number | null): Promise<MobileWord[]> {
@@ -234,6 +246,12 @@ export async function savePracticeProgress(params: {
     is_completed: params.isCompleted,
     answered_words: params.answeredWords,
     queue_words: params.queueWords,
+  }
+  if (params.chapterId == null) {
+    return mobileApiClient.json('/api/books/progress', {
+      method: 'POST',
+      body: JSON.stringify({ book_id: params.bookId, ...body }),
+    })
   }
   await mobileApiClient.json(`/api/books/${params.bookId}/chapters/${params.chapterId}/progress`, {
     method: 'POST',

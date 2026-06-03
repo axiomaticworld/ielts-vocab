@@ -15,7 +15,7 @@ import {
   type PracticeMode,
   type PracticeQueueSource,
 } from '@ielts-vocab/app-core'
-import { loadBooks, loadChapterWords, loadChapters, loadQuickMemoryReviewQueue, loadWrongWords, logPracticeSession, savePracticeProgress, syncQuickMemory, syncWrongWord } from '../api/learnerApi'
+import { loadBooks, loadChapterWords, loadChapters, loadQuickMemoryReviewQueue, loadWrongWords, syncQuickMemory, syncWrongWord } from '../api/learnerApi'
 import { Card, Field, Heading, Meta, Pill, PrimaryButton, Row, ScreenScroll, StatusText } from '../components/primitives'
 import { StickerLayer, practiceSheetStickerSlots } from '../components/stickers'
 import type { Navigate, NavigateOptions } from '../navigation/types'
@@ -24,6 +24,17 @@ import { useMobileSpeechRecognition } from '../speech/useMobileSpeechRecognition
 import { theme } from '../theme'
 import { PracticeCompletionCard, PracticeEntryPanel, type PracticeEntry, type PracticeEntryKey } from './PracticeEntryPanel'
 import { styles } from './PracticeScreen.styles'
+import {
+  entryForMode,
+  entryLabel,
+  initialDueReviewRequested,
+  initialEntry,
+  isRecognitionReviewMode,
+  scoreLabel,
+  searchableText,
+} from './practiceScreenSelectors'
+import { completePracticeSession, hydratePracticeSession, persistPracticeSessionProgress } from './practiceSessionLifecycle'
+import { practiceSessionDependencies } from './practiceSessionLifecycleRuntime'
 
 const MODES: PracticeMode[] = ['smart', 'quickmemory', 'test', 'listening', 'meaning', 'dictation', 'follow', 'radio', 'errors']
 const QUICK_MEMORY_REVIEW_LIMIT = 10
@@ -41,46 +52,6 @@ const MODE_HINTS: Record<PracticeMode, string> = {
   follow: '跟读发音，记录语音表现',
   radio: '连续播放，适合碎片复习',
   errors: '读取错词队列，直接开始清理',
-}
-
-function scoreLabel(label: string, value: number) {
-  return `${label} ${value}`
-}
-
-function entryForMode(mode?: PracticeMode): PracticeEntryKey {
-  if (mode === 'errors') return 'errors'
-  if (mode === 'follow') return 'follow'
-  if (mode === 'quickmemory' || mode === 'test') return 'ebbinghaus'
-  return 'regular'
-}
-
-function entryLabel(entry: PracticeEntryKey | null, mode: PracticeMode) {
-  if (entry === 'errors') return '错词练习'
-  if (entry === 'ebbinghaus') return '艾宾浩斯'
-  if (entry === 'follow') return '跟读练习'
-  return PRACTICE_MODE_LABELS[mode]
-}
-
-function searchableText(value: unknown) {
-  return String(value ?? '').toLowerCase()
-}
-
-function isRecognitionReviewMode(mode?: PracticeMode) {
-  return mode === 'quickmemory' || mode === 'test'
-}
-
-function hasExplicitScope(options?: NavigateOptions) {
-  return Boolean(options?.bookId || options?.chapterId != null)
-}
-
-function initialEntry(options?: NavigateOptions): PracticeEntryKey | null {
-  if (!options?.bookId && !options?.mode) return null
-  if (hasExplicitScope(options) && isRecognitionReviewMode(options.mode)) return 'regular'
-  return entryForMode(options.mode)
-}
-
-function initialDueReviewRequested(options?: NavigateOptions) {
-  return isRecognitionReviewMode(options?.mode) && !hasExplicitScope(options)
 }
 
 export function PracticeScreen({ navigate, options }: { navigate: Navigate; options?: NavigateOptions }) {
@@ -104,6 +75,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const cleanupRef = useRef<(() => void) | null>(null)
+  const chapterBaselineRef = useRef({ correctCount: 0, wrongCount: 0 })
   const startedAtRef = useRef(Date.now())
 
   const selectedBook = useMemo(() => books.find(book => String(book.id) === bookId) ?? null, [bookId, books])
@@ -194,13 +166,23 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
             withinDays: QUICK_MEMORY_REVIEW_WINDOW_DAYS,
           })
           : await loadChapterWords(nextBookId, nextChapterId)
+      const session = await hydratePracticeSession({
+        bookId: nextBookId,
+        chapterId: nextChapterId,
+        dependencies: practiceSessionDependencies,
+        mode: nextMode,
+        queueSource: nextQueueSource,
+        words,
+      })
       setQueueSource(nextQueueSource)
-      setQueue(words)
-      setIndex(0)
-      setCorrectCount(0)
-      setWrongCount(0)
+      setQueue(session.queue)
+      setIndex(session.index)
+      setCorrectCount(session.correctCount)
+      setWrongCount(session.wrongCount)
+      chapterBaselineRef.current = session.chapterBaseline
       setAnswer('')
       if (!words.length && nextQueueSource === 'due-review') setFeedback('暂无到期复习词，可以切换范围或稍后再来。')
+      else if (session.resumed) setFeedback('已恢复未完成练习')
       startedAtRef.current = Date.now()
     } catch (err) {
       setError(err instanceof Error ? err.message : '练习加载失败')
@@ -278,16 +260,25 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     if (!result.correct || value === 'unknown') await syncWrongWord(buildWrongWordRecord(currentWord, mode)).catch(() => undefined)
     if (mode === 'quickmemory' || mode === 'test') await syncQuickMemory(buildQuickMemorySyncRecord(currentWord, value === 'known')).catch(() => undefined)
     const snapshot = buildProgressSnapshot({ correctCount: nextCorrect, currentIndex: nextIndex, queue, wrongCount: nextWrong })
-    if (bookId && queueSource === 'chapter') await savePracticeProgress({ bookId, chapterId, mode, ...snapshot }).catch(() => undefined)
+    const persistedSnapshot = await persistPracticeSessionProgress({
+      bookId,
+      chapterBaseline: chapterBaselineRef.current,
+      chapterId,
+      dependencies: practiceSessionDependencies,
+      mode,
+      queueSource,
+      snapshot,
+    }).catch(() => null)
     if (snapshot.isCompleted) {
-      await logPracticeSession({
+      await completePracticeSession({
         bookId,
         chapterId,
-        correctCount: nextCorrect,
+        dependencies: practiceSessionDependencies,
         durationSeconds: Math.round((Date.now() - startedAtRef.current) / 1000),
         mode,
-        wordsStudied: snapshot.wordsLearned || nextIndex,
-        wrongCount: nextWrong,
+        queueSource,
+        snapshot: persistedSnapshot ?? snapshot,
+        wordCount: queue.length,
       }).catch(() => undefined)
     }
     setIndex(nextIndex)

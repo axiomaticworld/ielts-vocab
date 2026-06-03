@@ -270,6 +270,28 @@ export function buildProgressSnapshot(params: {
   }
 }
 
+export function restorePracticeQueueFromSnapshot(
+  queue: MobileWord[],
+  snapshot: { queueWords?: string[] | null } | null | undefined,
+): MobileWord[] {
+  const savedQueueWords = snapshot?.queueWords?.map(normalizeAnswer).filter(Boolean) ?? []
+  if (savedQueueWords.length === 0) return queue
+
+  const usedIndexes = new Set<number>()
+  const restoredQueue = savedQueueWords.flatMap(savedWord => {
+    const index = queue.findIndex((item, candidateIndex) => {
+      return !usedIndexes.has(candidateIndex) && wordKey(item) === savedWord
+    })
+    if (index < 0) return []
+    usedIndexes.add(index)
+    return [queue[index]]
+  })
+  if (restoredQueue.length === 0) return queue
+
+  const remainingQueue = queue.filter((_item, index) => !usedIndexes.has(index))
+  return [...restoredQueue, ...remainingQueue]
+}
+
 export function resolvePracticeQueueSource(params: {
   dueReviewRequested?: boolean
   mode: PracticeMode
