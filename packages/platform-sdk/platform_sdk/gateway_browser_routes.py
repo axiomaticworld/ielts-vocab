@@ -464,6 +464,47 @@ async def notes_export_proxy(request: Request):
     )
 
 
+
+
+@browser_compat_router.get("/api/notes/journal")
+async def notes_journal_list_proxy(request: Request):
+    return await _proxy_service_request(
+        request=request,
+        base_url=notes_service_url(),
+        path="/api/notes/journal",
+        unavailable_detail="notes service unavailable",
+    )
+
+
+@browser_compat_router.get("/api/notes/journal/today")
+async def notes_journal_today_proxy(request: Request):
+    return await _proxy_service_request(
+        request=request,
+        base_url=notes_service_url(),
+        path="/api/notes/journal/today",
+        unavailable_detail="notes service unavailable",
+    )
+
+
+@browser_compat_router.post("/api/notes/journal")
+async def notes_journal_upsert_proxy(request: Request):
+    return await _proxy_service_request(
+        request=request,
+        base_url=notes_service_url(),
+        path="/api/notes/journal",
+        unavailable_detail="notes service unavailable",
+    )
+
+
+@browser_compat_router.post("/api/notes/journal/polish")
+async def notes_journal_polish_proxy(request: Request):
+    return await _proxy_service_request(
+        request=request,
+        base_url=notes_service_url(),
+        path="/api/notes/journal/polish",
+        unavailable_detail="notes service unavailable",
+    )
+
 @browser_compat_router.api_route('/api/admin/{admin_path:path}', methods=['GET', 'POST'])
 async def admin_proxy(admin_path: str, request: Request):
     return await _proxy_admin_ops_request(request, f'/api/admin/{admin_path}')

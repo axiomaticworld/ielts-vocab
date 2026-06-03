@@ -214,7 +214,7 @@ export default function FollowMode({
       cancelled = true
       stopPracticeAudio()
     }
-  }, [currentWord, recorder.resetRecording, resetWaveform])
+  }, [currentWord, recorder, recorder.resetRecording, resetWaveform])
 
   const isCurrentPlayback = snapshot.origin === 'follow-mode'
     && snapshot.wordKey === wordKey
@@ -309,7 +309,7 @@ export default function FollowMode({
       return
     }
     await submitRecordedAudio(audio, durationSeconds)
-  }, [recorder.isRecording, recorder.stopRecording, submitRecordedAudio])
+  }, [recorder, submitRecordedAudio])
 
   const startManualRecording = useCallback(async () => {
     if (recorder.isRecording || scoring) return
@@ -324,7 +324,7 @@ export default function FollowMode({
       setWaveformRecordingState(false)
       resetWaveform()
     }
-  }, [recorder.isRecording, recorder.startRecording, resetWaveform, scoring, setWaveformRecordingState])
+  }, [recorder, resetWaveform, scoring, setWaveformRecordingState])
 
   const playAudio = async () => {
     if (!payload) return

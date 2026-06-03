@@ -157,6 +157,7 @@ export default function QuickMemoryMode({
     setCompletedSessionDurationSeconds(null)
     sessionLoggedRef.current = false
     resetCurrentSessionSegment()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, intentionally omitted
   }, [bookId, chapterId, clearQuestionTimers, initialIndex, isTestMode, modeVariant, onIndexChange, queue.length, resetCurrentSessionSegment])
 
   const reveal = useCallback(async (picked: 'known' | 'unknown', options: RevealOptions = {}) => {
@@ -218,6 +219,7 @@ export default function QuickMemoryMode({
       correctCount: nextResults.filter(result => result.choice === 'known').length,
       wrongCount: nextResults.filter(result => result.choice === 'unknown').length,
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pendingRecordSyncRef/resultsRef are stable refs
   }, [clearQuestionTimers, currentWord, index, isTestMode, modeVariant, onQuickMemoryRecordChange, onWrongWord, prepareLearningSession, quickMemoryScope, revisitedSet, settings, syncSessionSnapshot])
 
   const beginAutoUnknownReveal = useCallback(() => {
@@ -302,10 +304,11 @@ export default function QuickMemoryMode({
     return () => {
       clearQuestionTimers()
     }
-  }, [clearQuestionTimers, currentWord?.word, index, isTestMode, phase, queue, reviewMode, settings, startQuestionCountdown, vocabulary])
+  }, [clearQuestionTimers, currentWord, currentWord?.word, index, isTestMode, phase, queue, reviewMode, settings, startQuestionCountdown, vocabulary])
 
   useEffect(() => {
     void reconcileQuickMemoryRecordsWithBackend().catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire-once on mount, no deps needed
   }, [])
 
   useEffect(() => () => {
@@ -415,6 +418,7 @@ export default function QuickMemoryMode({
     sessionLoggedRef.current = false
     resetCurrentSessionSegment()
     setDone(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, intentionally omitted
   }, [clearQuestionTimers, isTestMode, onIndexChange, resetCurrentSessionSegment])
 
   const handleContinueReview = useCallback(async () => {

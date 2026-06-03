@@ -214,6 +214,7 @@ export function useLearningJournalPage() {
       cancelled = true
       stopPolling()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally watching job_id/status only, not the object identity
   }, [activeSummaryJob?.job_id, activeSummaryJob?.status, applyCompletedSummary])
 
   const generateSummary = useCallback(async (date: string) => {

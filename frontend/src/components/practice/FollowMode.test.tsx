@@ -94,6 +94,7 @@ vi.mock('../../features/speech/hooks/useSpeakingRecorder', async () => {
   const React = await vi.importActual<typeof import('react')>('react')
   return {
     default: () => {
+      // eslint-disable-next-line react-hooks/rules-of-hooks -- mock factory, not a real component
       const [state, setState] = React.useState({
         durationSeconds: 0,
         error: null as string | null,
@@ -101,15 +102,18 @@ vi.mock('../../features/speech/hooks/useSpeakingRecorder', async () => {
         level: 0,
       })
       recorderMock.emitLevel = (level: number) => setState(current => ({ ...current, level }))
+      // eslint-disable-next-line react-hooks/rules-of-hooks -- mock factory
       const resetRecording = React.useCallback(() => {
         recorderMock.reset()
         setState({ durationSeconds: 0, error: null, isRecording: false, level: 0 })
       }, [])
+      // eslint-disable-next-line react-hooks/rules-of-hooks -- mock factory
       const startRecording = React.useCallback(async () => {
         recorderMock.start()
         setState({ durationSeconds: 0, error: null, isRecording: true, level: 0 })
         return true
       }, [])
+      // eslint-disable-next-line react-hooks/rules-of-hooks -- mock factory
       const stopRecording = React.useCallback(async () => {
         recorderMock.stop()
         const error = recorderMock.nextStopBlob ? null : '未检测到麦克风输入，请检查系统麦克风和浏览器权限'
