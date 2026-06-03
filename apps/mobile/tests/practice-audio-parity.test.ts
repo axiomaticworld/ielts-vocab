@@ -26,12 +26,14 @@ describe('mobile audio practice parity contract', () => {
   it('shows explicit dictation spelling feedback and replays after a wrong spelling', () => {
     const screenSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
     const helperSource = read('apps/mobile/src/screens/PracticeScreen.helpers.ts')
+    const answerSubmissionSource = read('apps/mobile/src/screens/usePracticeAnswerSubmission.ts')
 
     assert.match(helperSource, /buildDictationFeedback/)
     assert.match(helperSource, /拼写不一致/)
-    assert.match(screenSource, /activeMode === 'dictation' && !result\.correct/)
-    assert.match(screenSource, /buildDictationFeedback\(value, result\.expected\)/)
-    assert.match(screenSource, /void playWord\('auto'\)/)
+    assert.match(answerSubmissionSource, /params\.activeMode === 'dictation' && !result\.correct/)
+    assert.match(answerSubmissionSource, /buildDictationFeedback\(value, result\.expected\)/)
+    assert.match(answerSubmissionSource, /void params\.playWord\('auto'\)/)
+    assert.match(screenSource, /usePracticeAnswerSubmission\(/)
   })
 
   it('gates follow completion on recognized speech text instead of a hardcoded success token', () => {

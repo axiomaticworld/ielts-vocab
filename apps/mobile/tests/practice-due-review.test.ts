@@ -65,22 +65,25 @@ describe('mobile quick-memory due review contract', () => {
   it('wires PracticeScreen to the review queue without replacing normal chapter loading', () => {
     const learnerApiSource = read('apps/mobile/src/api/learnerApi.ts')
     const practiceSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
+    const practiceDataSource = read('apps/mobile/src/screens/practiceDataLoading.ts')
+    const answerSubmissionSource = read('apps/mobile/src/screens/usePracticeAnswerSubmission.ts')
 
     assert.match(learnerApiSource, /export async function loadQuickMemoryReviewQueue/)
     assert.match(learnerApiSource, /buildQuickMemoryReviewQueuePath\(options\)/)
-    assert.match(practiceSource, /resolvePracticeQueueSource/)
-    assert.match(practiceSource, /loadQuickMemoryReviewQueue/)
-    assert.match(practiceSource, /loadChapterWords\(nextBookId, nextChapterId\)/)
-    assert.match(practiceSource, /persistPracticeSessionProgress/)
+    assert.match(practiceSource, /loadPracticeQueue/)
+    assert.match(practiceDataSource, /resolvePracticeQueueSource/)
+    assert.match(practiceDataSource, /loadQuickMemoryReviewQueue/)
+    assert.match(practiceDataSource, /loadChapterWords\(params\.bookId, params\.chapterId\)/)
+    assert.match(answerSubmissionSource, /persistPracticeSessionProgress/)
     assert.match(read('apps/mobile/src/screens/practiceSessionLifecycle.ts'), /queueSource !== 'chapter'/)
     assert.match(practiceSource, /queueSource === 'due-review'/)
-    assert.match(practiceSource, /mode === 'quickmemory' \|\| mode === 'test'/)
+    assert.match(answerSubmissionSource, /params\.mode === 'quickmemory' \|\| params\.mode === 'test'/)
   })
 
   it('keeps wrong-word recovery filters and selected-word review wired on mobile', () => {
     const learnerApiSource = read('apps/mobile/src/api/learnerApi.ts')
     const errorsSource = read('apps/mobile/src/screens/ErrorsScreen.tsx')
-    const practiceSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
+    const practiceDataSource = read('apps/mobile/src/screens/practiceDataLoading.ts')
     const navigationSource = read('apps/mobile/src/navigation/types.ts')
 
     assert.match(learnerApiSource, /dim: filters\.dimension === 'all' \? undefined : filters\.dimension/)
@@ -91,12 +94,13 @@ describe('mobile quick-memory due review contract', () => {
     assert.match(errorsSource, /testID=\{`errors\.mode\.\$\{item\.value\}`\}/)
     assert.match(navigationSource, /selectedWrongWords\?: string\[\]/)
     assert.match(navigationSource, /wrongWordFilters\?: MobileWrongWordFilters/)
-    assert.match(practiceSource, /buildMobileWrongWordsReviewQueue/)
-    assert.match(practiceSource, /options\?\.selectedWrongWords \?\? \[\]/)
+    assert.match(practiceDataSource, /buildMobileWrongWordsReviewQueue/)
+    assert.match(practiceDataSource, /params\.options\?\.selectedWrongWords \?\? \[\]/)
   })
 
   it('keeps wrong-word next-round and progress persistence wired on mobile', () => {
     const practiceSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
+    const answerSubmissionSource = read('apps/mobile/src/screens/usePracticeAnswerSubmission.ts')
     const progressStorageSource = read('apps/mobile/src/screens/errorReviewProgressStorage.ts')
 
     assert.match(progressStorageSource, /CORE_STORAGE_KEYS\.wrongWordReview/)
@@ -105,7 +109,7 @@ describe('mobile quick-memory due review contract', () => {
     assert.match(practiceSource, /persistErrorReviewProgress/)
     assert.match(practiceSource, /buildNextErrorReviewRoundWords/)
     assert.match(practiceSource, /testID="practice\.errors\.nextRound"/)
-    assert.match(practiceSource, /updateErrorReviewRoundResults/)
+    assert.match(answerSubmissionSource, /updateErrorReviewRoundResults/)
   })
 
   it('builds selected and retry wrong-word queues with app-core helpers', () => {
@@ -122,6 +126,7 @@ describe('mobile quick-memory due review contract', () => {
     const learnerApiSource = read('apps/mobile/src/api/learnerApi.ts')
     const smartHookSource = read('apps/mobile/src/screens/useMobileSmartPractice.ts')
     const practiceSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
+    const answerSubmissionSource = read('apps/mobile/src/screens/usePracticeAnswerSubmission.ts')
 
     assert.match(learnerApiSource, /export async function loadSmartStats/)
     assert.match(learnerApiSource, /\/api\/ai\/smart-stats/)
@@ -132,11 +137,27 @@ describe('mobile quick-memory due review contract', () => {
     assert.match(smartHookSource, /recordSmartPracticeResult/)
     assert.match(smartHookSource, /mode: 'smart'/)
     assert.match(practiceSource, /resolveSmartPracticeMode\(smartDimension\)/)
-    assert.match(practiceSource, /const currentSmartDimension = mode === 'smart' \? smartDimension : undefined/)
-    assert.match(practiceSource, /evaluatePracticeAnswer\(currentWord, mode, value, \{ smartDimension: currentSmartDimension \}\)/)
-    assert.match(practiceSource, /recordSmartAnswer\(\{ bookId, chapterId, correct: result\.correct, dimension: currentSmartDimension/)
-    assert.match(practiceSource, /buildWrongWordRecord\(currentWord, mode, currentSmartDimension\)/)
-    assert.match(practiceSource, /mode === 'quickmemory' \|\| mode === 'test'/)
+    assert.match(answerSubmissionSource, /const currentSmartDimension = params\.mode === 'smart' \? params\.smartDimension : undefined/)
+    assert.match(answerSubmissionSource, /evaluatePracticeAnswer\(params\.currentWord, params\.mode, value, \{ smartDimension: currentSmartDimension \}\)/)
+    assert.match(answerSubmissionSource, /params\.recordSmartAnswer\(\{/)
+    assert.match(answerSubmissionSource, /dimension: currentSmartDimension/)
+    assert.match(answerSubmissionSource, /buildWrongWordRecord\(params\.currentWord, params\.mode, currentSmartDimension\)/)
+    assert.match(answerSubmissionSource, /params\.mode === 'quickmemory' \|\| params\.mode === 'test'/)
     assert.match(practiceSource, /activeMode === 'listening'/)
+  })
+
+  it('splits mobile practice runtime into owned loading, session, and submission surfaces', () => {
+    const practiceSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
+    const dataSource = read('apps/mobile/src/screens/practiceDataLoading.ts')
+    const sessionStateSource = read('apps/mobile/src/screens/usePracticeSessionState.ts')
+    const answerSubmissionSource = read('apps/mobile/src/screens/usePracticeAnswerSubmission.ts')
+
+    assert.match(practiceSource, /usePracticeSessionState\(\)/)
+    assert.match(practiceSource, /usePracticeAnswerSubmission\(/)
+    assert.match(practiceSource, /loadPracticeBootstrap\(options\)/)
+    assert.match(dataSource, /export async function loadPracticeQueue/)
+    assert.match(sessionStateSource, /export function usePracticeSessionState/)
+    assert.match(answerSubmissionSource, /export function usePracticeAnswerSubmission/)
+    assert.equal(practiceSource.includes('evaluatePracticeAnswer(currentWord'), false)
   })
 })
