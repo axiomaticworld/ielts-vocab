@@ -4,9 +4,11 @@ import {
   buildCsv,
   buildPracticeOptions,
   buildProgressSnapshot,
+  buildQuickMemoryReviewQueuePath,
   buildQuickMemorySyncRecord,
   buildWrongWordRecord,
   evaluatePracticeAnswer,
+  resolvePracticeQueueSource,
   stripHtml,
   type MobileWord,
 } from '../src'
@@ -60,6 +62,27 @@ describe('mobile practice engine', () => {
     ])
     assert.ok(options.includes('动态的'))
     assert.match(buildCsv([{ word: 'a,b', definition: '"quoted"' }]), /"a,b"/)
+  })
+
+  it('separates quick-memory due review from normal chapter queues', () => {
+    assert.equal(resolvePracticeQueueSource({ dueReviewRequested: true, mode: 'quickmemory' }), 'due-review')
+    assert.equal(resolvePracticeQueueSource({ dueReviewRequested: true, mode: 'test' }), 'due-review')
+    assert.equal(resolvePracticeQueueSource({ dueReviewRequested: false, mode: 'quickmemory' }), 'chapter')
+    assert.equal(resolvePracticeQueueSource({ dueReviewRequested: true, mode: 'listening' }), 'chapter')
+    assert.equal(resolvePracticeQueueSource({ dueReviewRequested: true, mode: 'errors' }), 'errors')
+  })
+
+  it('builds the mobile quick-memory review queue path with scope filters', () => {
+    assert.equal(
+      buildQuickMemoryReviewQueuePath({
+        bookId: 'book-a',
+        chapterId: 2,
+        limit: 10,
+        offset: 0,
+        withinDays: 3,
+      }),
+      '/api/ai/quick-memory/review-queue?limit=10&within_days=3&offset=0&scope=due&book_id=book-a&chapter_id=2',
+    )
   })
 
   it('skips inflected distractors when building listening options', () => {

@@ -9,6 +9,7 @@ import {
   MobileChapterSchema,
   MobileWordSchema,
   WrongWordSchema,
+  buildQuickMemoryReviewQueuePath,
   parseArray,
   type ExamPaperDetail,
   type ExamPaperSummary,
@@ -20,6 +21,7 @@ import {
   type MobileChapter,
   type MobileWord,
   type PracticeMode,
+  type QuickMemoryReviewQueuePathOptions,
   type WrongWord,
 } from '@ielts-vocab/app-core'
 import { mobileApiClient } from './mobileApi'
@@ -129,6 +131,13 @@ export async function loadChapterWords(bookId: string, chapterId?: string | numb
     : `/api/books/${bookId}/chapters/${chapterId}`
   const payload = await mobileApiClient.json<{ words?: unknown[]; chapter?: { words?: unknown[] } }>(path)
   return parseArray(MobileWordSchema, payload.words ?? payload.chapter?.words)
+}
+
+export async function loadQuickMemoryReviewQueue(
+  options: QuickMemoryReviewQueuePathOptions,
+): Promise<MobileWord[]> {
+  const payload = await mobileApiClient.json<{ words?: unknown[] }>(buildQuickMemoryReviewQueuePath(options))
+  return parseArray(MobileWordSchema, payload.words)
 }
 
 export async function searchWords(term: string): Promise<MobileWord[]> {

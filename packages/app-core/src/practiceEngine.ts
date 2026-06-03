@@ -16,6 +16,16 @@ export type PracticeProgressSnapshot = {
   wrongCount: number
 }
 
+export type PracticeQueueSource = 'chapter' | 'due-review' | 'errors'
+
+export type QuickMemoryReviewQueuePathOptions = {
+  bookId?: string | number | null
+  chapterId?: string | number | null
+  limit: number
+  offset: number
+  withinDays: number
+}
+
 export const PRACTICE_MODE_LABELS: Record<PracticeMode, string> = {
   smart: '智能模式',
   quickmemory: '速记模式',
@@ -258,6 +268,27 @@ export function buildProgressSnapshot(params: {
     wordsLearned: new Set(answered.map(item => wordKey(item))).size,
     wrongCount: params.wrongCount,
   }
+}
+
+export function resolvePracticeQueueSource(params: {
+  dueReviewRequested?: boolean
+  mode: PracticeMode
+}): PracticeQueueSource {
+  if (params.mode === 'errors') return 'errors'
+  if (params.dueReviewRequested && (params.mode === 'quickmemory' || params.mode === 'test')) return 'due-review'
+  return 'chapter'
+}
+
+export function buildQuickMemoryReviewQueuePath(options: QuickMemoryReviewQueuePathOptions): string {
+  const params = new URLSearchParams({
+    limit: String(Math.max(0, Math.trunc(options.limit))),
+    within_days: String(Math.max(1, Math.trunc(options.withinDays))),
+    offset: String(Math.max(0, Math.trunc(options.offset))),
+    scope: 'due',
+  })
+  if (options.bookId != null && options.bookId !== '') params.set('book_id', String(options.bookId))
+  if (options.chapterId != null && options.chapterId !== '') params.set('chapter_id', String(options.chapterId))
+  return `/api/ai/quick-memory/review-queue?${params.toString()}`
 }
 
 export function buildWrongWordRecord(word: MobileWord, mode: PracticeMode): WrongWord {

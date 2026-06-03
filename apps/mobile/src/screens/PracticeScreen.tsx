@@ -8,12 +8,14 @@ import {
   buildQuickMemorySyncRecord,
   buildWrongWordRecord,
   evaluatePracticeAnswer,
+  resolvePracticeQueueSource,
   type MobileBook,
   type MobileChapter,
   type MobileWord,
   type PracticeMode,
+  type PracticeQueueSource,
 } from '@ielts-vocab/app-core'
-import { loadBooks, loadChapterWords, loadChapters, loadWrongWords, logPracticeSession, savePracticeProgress, syncQuickMemory, syncWrongWord } from '../api/learnerApi'
+import { loadBooks, loadChapterWords, loadChapters, loadQuickMemoryReviewQueue, loadWrongWords, logPracticeSession, savePracticeProgress, syncQuickMemory, syncWrongWord } from '../api/learnerApi'
 import { Card, Field, Heading, Meta, Pill, PrimaryButton, Row, ScreenScroll, StatusText } from '../components/primitives'
 import { StickerLayer, practiceSheetStickerSlots } from '../components/stickers'
 import type { Navigate, NavigateOptions } from '../navigation/types'
@@ -23,7 +25,9 @@ import { theme } from '../theme'
 import { PracticeCompletionCard, PracticeEntryPanel, type PracticeEntry, type PracticeEntryKey } from './PracticeEntryPanel'
 import { styles } from './PracticeScreen.styles'
 
-const MODES: PracticeMode[] = ['smart', 'quickmemory', 'listening', 'meaning', 'dictation', 'follow', 'radio', 'errors']
+const MODES: PracticeMode[] = ['smart', 'quickmemory', 'test', 'listening', 'meaning', 'dictation', 'follow', 'radio', 'errors']
+const QUICK_MEMORY_REVIEW_LIMIT = 10
+const QUICK_MEMORY_REVIEW_WINDOW_DAYS = 3
 
 type SheetState = 'mode' | 'scope' | null
 
@@ -46,7 +50,7 @@ function scoreLabel(label: string, value: number) {
 function entryForMode(mode?: PracticeMode): PracticeEntryKey {
   if (mode === 'errors') return 'errors'
   if (mode === 'follow') return 'follow'
-  if (mode === 'quickmemory') return 'ebbinghaus'
+  if (mode === 'quickmemory' || mode === 'test') return 'ebbinghaus'
   return 'regular'
 }
 
@@ -61,10 +65,30 @@ function searchableText(value: unknown) {
   return String(value ?? '').toLowerCase()
 }
 
+function isRecognitionReviewMode(mode?: PracticeMode) {
+  return mode === 'quickmemory' || mode === 'test'
+}
+
+function hasExplicitScope(options?: NavigateOptions) {
+  return Boolean(options?.bookId || options?.chapterId != null)
+}
+
+function initialEntry(options?: NavigateOptions): PracticeEntryKey | null {
+  if (!options?.bookId && !options?.mode) return null
+  if (hasExplicitScope(options) && isRecognitionReviewMode(options.mode)) return 'regular'
+  return entryForMode(options.mode)
+}
+
+function initialDueReviewRequested(options?: NavigateOptions) {
+  return isRecognitionReviewMode(options?.mode) && !hasExplicitScope(options)
+}
+
 export function PracticeScreen({ navigate, options }: { navigate: Navigate; options?: NavigateOptions }) {
   const { start, state: speechState, stop } = useMobileSpeechRecognition('en')
-  const [entry, setEntry] = useState<PracticeEntryKey | null>(options?.bookId || options?.mode ? entryForMode(options?.mode) : null)
+  const [entry, setEntry] = useState<PracticeEntryKey | null>(initialEntry(options))
   const [mode, setMode] = useState<PracticeMode>(options?.mode ?? 'quickmemory')
+  const [dueReviewRequested, setDueReviewRequested] = useState(initialDueReviewRequested(options))
+  const [queueSource, setQueueSource] = useState<PracticeQueueSource>('chapter')
   const [sheet, setSheet] = useState<SheetState>(null)
   const [books, setBooks] = useState<MobileBook[]>([])
   const [chapters, setChapters] = useState<MobileChapter[]>([])
@@ -108,15 +132,24 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
         if (!active) return
         setBooks(nextBooks)
         const initialBookId = options?.bookId || String(nextBooks[0]?.id ?? '')
-        if (!initialBookId) return
+        const shouldLoadDueReview = initialDueReviewRequested(options)
+        if (!initialBookId) {
+          if (options?.mode) setEntry(initialEntry(options))
+          setDueReviewRequested(shouldLoadDueReview)
+          if (shouldLoadDueReview) await startPractice(options?.mode ?? 'quickmemory', '', null, true)
+          return
+        }
         setBookId(initialBookId)
         const nextChapters = await loadChapters(initialBookId)
         if (!active) return
         setChapters(nextChapters)
-        if (options?.bookId || options?.mode) setEntry(entryForMode(options?.mode))
+        if (options?.bookId || options?.mode) setEntry(initialEntry(options))
+        setDueReviewRequested(shouldLoadDueReview)
         if (options?.chapterId) {
           setChapterId(options.chapterId)
-          await startPractice(options.mode ?? 'quickmemory', initialBookId, options.chapterId)
+          await startPractice(options.mode ?? 'quickmemory', initialBookId, options.chapterId, shouldLoadDueReview)
+        } else if (shouldLoadDueReview) {
+          await startPractice(options?.mode ?? 'quickmemory', options?.bookId ? initialBookId : '', null, true)
         }
       })
       .catch(err => setError(err instanceof Error ? err.message : '词书加载失败'))
@@ -135,18 +168,39 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     setChapters(await loadChapters(nextBookId))
   }
 
-  async function startPractice(nextMode = mode, nextBookId = bookId, nextChapterId = chapterId) {
+  async function startPractice(
+    nextMode = mode,
+    nextBookId = bookId,
+    nextChapterId = chapterId,
+    nextDueReviewRequested = dueReviewRequested,
+  ) {
     setLoading(true)
     setError('')
     setFeedback('')
     try {
-      if (nextMode !== 'errors' && !nextBookId) throw new Error('请先选择练习范围')
-      const words = nextMode === 'errors' ? await loadWrongWords() : await loadChapterWords(nextBookId, nextChapterId)
+      const nextQueueSource = resolvePracticeQueueSource({
+        dueReviewRequested: nextDueReviewRequested,
+        mode: nextMode,
+      })
+      if (nextQueueSource === 'chapter' && !nextBookId) throw new Error('请先选择练习范围')
+      const words = nextQueueSource === 'errors'
+        ? await loadWrongWords()
+        : nextQueueSource === 'due-review'
+          ? await loadQuickMemoryReviewQueue({
+            bookId: nextBookId || null,
+            chapterId: nextChapterId,
+            limit: QUICK_MEMORY_REVIEW_LIMIT,
+            offset: 0,
+            withinDays: QUICK_MEMORY_REVIEW_WINDOW_DAYS,
+          })
+          : await loadChapterWords(nextBookId, nextChapterId)
+      setQueueSource(nextQueueSource)
       setQueue(words)
       setIndex(0)
       setCorrectCount(0)
       setWrongCount(0)
       setAnswer('')
+      if (!words.length && nextQueueSource === 'due-review') setFeedback('暂无到期复习词，可以切换范围或稍后再来。')
       startedAtRef.current = Date.now()
     } catch (err) {
       setError(err instanceof Error ? err.message : '练习加载失败')
@@ -161,24 +215,31 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
       return
     }
     const nextMode = item.mode ?? 'quickmemory'
+    const nextDueReviewRequested = item.key === 'ebbinghaus' && isRecognitionReviewMode(nextMode)
     setEntry(item.key)
     setMode(nextMode)
-    if (nextMode === 'errors' || bookId) await startPractice(nextMode)
+    setDueReviewRequested(nextDueReviewRequested)
+    if (nextMode === 'errors' || bookId || nextDueReviewRequested) await startPractice(nextMode, bookId, chapterId, nextDueReviewRequested)
     else setSheet('scope')
   }
 
   async function chooseMode(nextMode: PracticeMode) {
+    const nextEntry = entryForMode(nextMode)
+    const nextDueReviewRequested = nextEntry === 'ebbinghaus' && isRecognitionReviewMode(nextMode)
     setMode(nextMode)
-    setEntry(entryForMode(nextMode))
+    setEntry(nextEntry)
+    setDueReviewRequested(nextDueReviewRequested)
     setSheet(null)
-    if (nextMode === 'errors' || chapterId || queue.length || bookId) await startPractice(nextMode)
+    if (nextMode === 'errors' || chapterId || queue.length || bookId || nextDueReviewRequested) {
+      await startPractice(nextMode, bookId, chapterId, nextDueReviewRequested)
+    }
   }
 
   async function chooseChapter(chapter: MobileChapter | null) {
     const nextChapterId = chapter?.id ?? null
     setChapterId(nextChapterId)
     setSheet(null)
-    await startPractice(mode, bookId, nextChapterId)
+    await startPractice(mode, bookId, nextChapterId, dueReviewRequested)
   }
 
   async function toggleRecording() {
@@ -215,9 +276,9 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     setFeedback(result.feedback)
     setAnswer('')
     if (!result.correct || value === 'unknown') await syncWrongWord(buildWrongWordRecord(currentWord, mode)).catch(() => undefined)
-    if (mode === 'quickmemory') await syncQuickMemory(buildQuickMemorySyncRecord(currentWord, value === 'known')).catch(() => undefined)
+    if (mode === 'quickmemory' || mode === 'test') await syncQuickMemory(buildQuickMemorySyncRecord(currentWord, value === 'known')).catch(() => undefined)
     const snapshot = buildProgressSnapshot({ correctCount: nextCorrect, currentIndex: nextIndex, queue, wrongCount: nextWrong })
-    if (bookId && mode !== 'errors') await savePracticeProgress({ bookId, chapterId, mode, ...snapshot }).catch(() => undefined)
+    if (bookId && queueSource === 'chapter') await savePracticeProgress({ bookId, chapterId, mode, ...snapshot }).catch(() => undefined)
     if (snapshot.isCompleted) {
       await logPracticeSession({
         bookId,
@@ -233,7 +294,17 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
   }
 
   const progress = queue.length ? Math.min(100, (index / queue.length) * 100) : 0
-  const chapterLabel = mode === 'errors' ? '错词队列' : selectedChapter?.title || '全书'
+  const chapterLabel = queueSource === 'errors'
+    ? '错词队列'
+    : queueSource === 'due-review'
+      ? selectedChapter?.title || selectedBook?.title || '到期复习'
+      : selectedChapter?.title || '全书'
+  const emptyTitle = queueSource === 'due-review' ? '暂无到期复习' : mode === 'errors' ? '错词练习' : '选择章节开始练习'
+  const emptyHint = queueSource === 'due-review'
+    ? '当前范围没有到期词，可以切换词书/章节过滤条件后重试。'
+    : mode === 'errors'
+      ? '当前会读取错词队列。'
+      : '可以从顶部状态栏搜索词书或章节。'
 
   return (
     <View style={styles.practiceRoot}>
@@ -288,7 +359,7 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                     <Text style={styles.micText}>音量 {Math.round(speechState.level * 100)}% · {speechState.finalText || speechState.partialText || '等待录音'}</Text>
                   </View>
                 ) : null}
-                {mode === 'quickmemory' ? (
+                {mode === 'quickmemory' || mode === 'test' ? (
                   <View style={styles.answerRow}>
                     <Pressable accessibilityLabel="认识" accessibilityRole="button" style={[styles.answerButton, styles.confirmButton]} onPress={() => void submit('known')} testID="practice.quickmemory.known">
                       <CheckCircle2 color={theme.colors.success} size={18} />
@@ -334,8 +405,8 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
               />
             ) : (
               <Card>
-                <Heading>{mode === 'errors' ? '错词练习' : '选择章节开始练习'}</Heading>
-                <Meta>{mode === 'errors' ? '当前会读取错词队列。' : '可以从顶部状态栏搜索词书或章节。'}</Meta>
+                <Heading>{emptyTitle}</Heading>
+                <Meta>{feedback || emptyHint}</Meta>
                 <PrimaryButton label="选择范围" onPress={() => setSheet('scope')} />
               </Card>
             )}

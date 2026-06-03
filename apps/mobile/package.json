@@ -11,7 +11,7 @@
     "ios": "react-native run-ios",
     "lint": "eslint src --ext .ts,.tsx",
     "start": "react-native start",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "node --import tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
