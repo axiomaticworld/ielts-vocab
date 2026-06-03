@@ -1,6 +1,60 @@
 # Project Notes
 Last updated: 2026-05-07 21:04:03 +08:00
 
+## No-Stop After Completion (global hard constraint)
+
+> Added 2026-06-03 after a real failure on `products/ielts-vocab`: the agent completed a 13-commit `git-commit-batch` cycle, then listed four "next step" options (m1 / m2 / m3 / m4) and waited for the user to pick one before doing anything, even though the user had already accepted the A merge plan earlier in the same task. The user explicitly told the agent to stop doing that. This block overrides any softer phrasing elsewhere in this workspace or in OMX templates, and it is enforced at the same level as "User-Confirmation Lockdown" above.
+
+### Invariants (absolute)
+
+- A completed step is **not** a hand-off moment. After a verified result, the agent MUST continue with the obvious next safe action and report at the end, unless the next action is in the explicit high-risk set below.
+- Listing multiple-choice next steps at the end of a task ("choose m1/m2/m3/m4", "do you want X or Y?", "should I do A or B?") when the next safe action is already obvious is **forbidden**. Pick the default, do it, report.
+- "Wait for the user to confirm" is **never** a valid terminal state for ordinary reversible local work. It is only valid for the explicit high-risk set in the next section.
+- The agent owns the choreography of the next step. The user owns scope, not pacing.
+
+### High-risk set (the ONLY cases where stopping is allowed)
+
+Stopping to ask is allowed only for actions that match one of these categories, and the question must name the specific risk:
+
+- Destructive / irreversible actions (`rm -rf`, force-push, dropping a DB, wiping state, deleting the only copy).
+- Credential-gated actions (deploy keys, publish tokens, prod secrets, SSH private keys).
+- External production actions (real users, paid services, package publish, infra apply).
+- Material scope change beyond what the user stated in the current task.
+- Missing authority (cannot read a file, cannot reach a service, cannot run a tool, repo permission denied).
+
+For everything else — git commit / branch / push, file edit, install, build, test, lint, typecheck, restart a local service, run a script, generate a report, send a notification, write a doc, update memory, clean up artifacts — the agent MUST proceed and report.
+
+### What "continue" looks like in practice
+
+- After a batch of commits lands and is verified: pick the next obvious local action (e.g. switch to the integration branch, run a fast verification, write the summary doc, push if the task said push) and execute it. Do **not** list options.
+- After a build/test/lint pass: report the result, then move to the next step in the same task. Do **not** ask "anything else?".
+- After a notification is sent: log it, do not wait.
+- After a long-running command finishes: read the output, decide, act.
+- If a true blocker is hit, name the blocker, the minimal default plan, and the single irreversible action that would resolve it — but do not invent extra checkpoints.
+
+### Anti-patterns (must not appear in agent output)
+
+- "Next steps: m1 ... m2 ... m3 ... which do you want?"
+- "Let me know if you'd like me to ..."
+- "I can do X or Y, your call."
+- "Should I continue with ..."
+- "Just confirm and I'll proceed."
+- "If you want, I can ..."
+- A final paragraph whose only purpose is to hand the pacing decision back to the user after a clear, reversible result has already been delivered.
+- "Stopping here" / "I'll wait" / "Ready when you are" after a successful step.
+
+### Self-check before sending the final message of any task
+
+Before sending the last message of a task, ask:
+
+1. "Did I just list multiple-choice options at the end of a completed step?" If yes, delete the list and replace it with the next action I am about to take.
+2. "Is the next action in the high-risk set above?" If no, do the next action now and report at the end of the same message.
+3. "If I am about to ask a question, is the user missing information only they have, or am I asking them to re-decide something they already decided?" If the latter, delete the question.
+4. "Is there a safe, reversible next step I can do in the same turn?" If yes, do it before sending.
+
+A correct final message reads as a report + next action, never as a report + menu.
+
+
 ## Repo Summary
 - IELTS vocabulary learning monorepo with Web, React Native mobile, shared TypeScript client core, and Flask / split-service backend surfaces.
 - Main scopes: `frontend/` for the Web package; `apps/mobile/` for React Native Android/iOS; `packages/app-core/` for cross-client contracts and pure logic; `backend/` for APIs and persistence; `services/` plus `apps/gateway-bff/` for split runtime services; `vocabulary_data/` for book assets; and `docs/` for durable plans, audits, and runbooks.
