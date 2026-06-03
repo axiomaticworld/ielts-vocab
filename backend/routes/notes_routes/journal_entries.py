@@ -6,7 +6,7 @@ from flask import jsonify, request
 
 from models import UserJournalNote, db
 from routes.middleware import token_required
-from services.journal_polish_service import polish_text
+from services.journal_polish_service import JournalPolishUnavailable, polish_text
 
 
 def _today_str() -> str:
@@ -107,7 +107,10 @@ def polish_journal_entry(current_user):
     if not content:
         return jsonify({'error': '内容不能为空'}), 400
 
-    polished = polish_text(content)
+    try:
+        polished = polish_text(content)
+    except JournalPolishUnavailable as exc:
+        return jsonify({'error': str(exc)}), 503
 
     return jsonify({
         'polished': polished,

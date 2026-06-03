@@ -232,7 +232,7 @@ def upsert_journal_entry(current_user):
 @notes_bp.route('/journal/polish', methods=['POST'])
 @token_required
 def polish_journal_entry(current_user):
-    from services.journal_polish_service import polish_text
+    from services.journal_polish_service import JournalPolishUnavailable, polish_text
 
     body = request.get_json(silent=True) or {}
     content = (body.get('content') or '').strip()
@@ -240,7 +240,10 @@ def polish_journal_entry(current_user):
     if not content:
         return jsonify({'error': '内容不能为空'}), 400
 
-    polished = polish_text(content)
+    try:
+        polished = polish_text(content)
+    except JournalPolishUnavailable as exc:
+        return jsonify({'error': str(exc)}), 503
 
     return jsonify({
         'polished': polished,
