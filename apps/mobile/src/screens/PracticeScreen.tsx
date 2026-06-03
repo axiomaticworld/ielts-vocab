@@ -22,20 +22,20 @@ import {
   type PracticeQueueSource,
 } from '@ielts-vocab/app-core'
 import { loadBooks, loadChapterWords, loadChapters, loadQuickMemoryReviewQueue, loadWrongWords, syncQuickMemory, syncWrongWord } from '../api/learnerApi'
-import { Card, Field, Heading, Meta, Pill, PrimaryButton, Row, ScreenScroll, StatusText } from '../components/primitives'
+import { Card, Field, Heading, Meta, Pill, PrimaryButton, ScreenScroll, StatusText } from '../components/primitives'
 import { StickerLayer, practiceSheetStickerSlots } from '../components/stickers'
 import type { Navigate, NavigateOptions } from '../navigation/types'
-import { playRemoteAudio } from '../native/NativeAudioPlayer'
 import { useMobileSpeechRecognition } from '../speech/useMobileSpeechRecognition'
 import { theme } from '../theme'
 import { getErrorReviewFilters, hydrateErrorReviewProgress, persistErrorReviewProgress } from './errorReviewProgressStorage'
 import { PracticeCompletionCard, PracticeEntryPanel, type PracticeEntry, type PracticeEntryKey } from './PracticeEntryPanel'
-import { entryForMode, initialDueReviewRequested, initialEntry, isRecognitionReviewMode, PRACTICE_MODE_HINTS, PRACTICE_MODES, searchableText } from './PracticeScreen.helpers'
+import { buildDictationFeedback, entryForMode, initialDueReviewRequested, initialEntry, isRecognitionReviewMode, PRACTICE_MODE_HINTS, PRACTICE_MODES, searchableText } from './PracticeScreen.helpers'
 import { PracticeStatusHeader } from './PracticeStatusHeader'
 import { styles } from './PracticeScreen.styles'
 import { completePracticeSession, hydratePracticeSession, persistPracticeSessionProgress } from './practiceSessionLifecycle'
 import { practiceSessionDependencies } from './practiceSessionLifecycleRuntime'
 import { useMobileSmartPractice } from './useMobileSmartPractice'
+import { usePracticeAudioModes } from './usePracticeAudioModes'
 
 const QUICK_MEMORY_REVIEW_LIMIT = 10
 const QUICK_MEMORY_REVIEW_WINDOW_DAYS = 3
@@ -254,18 +254,31 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     }
   }
 
-  async function playWord() {
-    if (!currentWord) return
-    const params = new URLSearchParams({ w: currentWord.word, cache_only: '1' })
-    await playRemoteAudio(`/api/tts/word-audio?${params.toString()}`).catch(err => {
-      setError(err instanceof Error ? err.message : '播放失败')
-    })
-  }
+  const {
+    audioStatus,
+    pauseRadio,
+    playWord,
+    radioInteractionCount,
+    radioPaused,
+    resumeRadio,
+    skipRadioNext,
+  } = usePracticeAudioModes({
+    currentWord,
+    index,
+    mode: activeMode,
+    onRadioAdvance: async () => submit('played'),
+    setError,
+    setFeedback,
+  })
 
   async function submit(value = answer) {
     if (!currentWord) return
     const currentSmartDimension = mode === 'smart' ? smartDimension : undefined
     const result = evaluatePracticeAnswer(currentWord, mode, value, { smartDimension: currentSmartDimension })
+    if (mode === 'follow' && !value.trim()) {
+      setFeedback(result.feedback)
+      return
+    }
     const nextCorrect = correctCount + (result.correct ? 1 : 0)
     const nextWrong = wrongCount + (result.correct ? 0 : 1)
     const nextIndex = index + 1
@@ -275,8 +288,9 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     setCorrectCount(nextCorrect)
     setWrongCount(nextWrong)
     if (mode === 'errors') setErrorRoundResults(nextErrorRoundResults)
-    setFeedback(result.feedback)
+    setFeedback(activeMode === 'dictation' && !result.correct ? buildDictationFeedback(value, result.expected) : result.feedback)
     setAnswer('')
+    if (activeMode === 'dictation' && !result.correct) void playWord('auto')
     if (mode === 'smart' && currentSmartDimension) await recordSmartAnswer({ bookId, chapterId, correct: result.correct, dimension: currentSmartDimension, word: currentWord })
     if (!result.correct || value === 'unknown') await syncWrongWord(buildWrongWordRecord(currentWord, mode, currentSmartDimension)).catch(() => undefined)
     if (mode === 'quickmemory' || mode === 'test') await syncQuickMemory(buildQuickMemorySyncRecord(currentWord, value === 'known')).catch(() => undefined)
@@ -351,6 +365,8 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
     : mode === 'errors'
       ? '当前会读取错词队列。'
       : '可以从顶部状态栏搜索词书或章节。'
+  const followTranscript = (speechState.finalText || speechState.partialText || '').trim()
+  const followTranscriptLabel = speechState.finalText ? '最终识别' : speechState.partialText ? '实时识别' : '等待录音'
 
   return (
     <View style={styles.practiceRoot}>
@@ -386,12 +402,13 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                 <Text style={styles.word}>{activeMode === 'meaning' ? currentWord.definition : currentWord.word}</Text>
                 <Text style={styles.wordMeta}>{[currentWord.phonetic, currentWord.pos].filter(Boolean).join(' ') || 'IELTS 词条'}</Text>
                 {activeMode !== 'meaning' ? <Text style={styles.definition}>{currentWord.definition}</Text> : null}
-                {activeMode === 'listening' || activeMode === 'dictation' || activeMode === 'radio' ? <PrimaryButton label="播放发音" onPress={() => void playWord()} /> : null}
+                {activeMode === 'listening' || activeMode === 'dictation' ? <PrimaryButton label="播放发音" onPress={() => void playWord()} testID="practice.audio.replay" /> : null}
+                {audioStatus && mode !== 'follow' ? <Meta>{audioStatus}</Meta> : null}
                 {mode === 'follow' ? <PrimaryButton label={speechState.status === 'recording' ? '停止录音' : '开始跟读'} onPress={() => void toggleRecording()} /> : null}
                 {mode === 'follow' ? (
                   <View style={styles.micStrip}>
                     <Mic color={theme.colors.primaryDark} size={18} />
-                    <Text style={styles.micText}>音量 {Math.round(speechState.level * 100)}% · {speechState.finalText || speechState.partialText || '等待录音'}</Text>
+                    <Text style={styles.micText}>音量 {Math.round(speechState.level * 100)}% · {followTranscriptLabel}：{followTranscript || '暂无语音结果'}</Text>
                   </View>
                 ) : null}
                 {mode === 'quickmemory' || mode === 'test' ? (
@@ -414,15 +431,19 @@ export function PracticeScreen({ navigate, options }: { navigate: Navigate; opti
                     ))}
                   </View>
                 ) : mode === 'radio' ? (
-                  <PrimaryButton label="下一词" onPress={() => void submit('played')} />
+                  <View style={styles.radioControls}>
+                    <PrimaryButton label={radioPaused ? '继续播放' : '暂停播放'} onPress={() => void (radioPaused ? resumeRadio() : pauseRadio())} testID="practice.radio.toggle" tone="neutral" />
+                    <PrimaryButton label="下一词" onPress={() => void skipRadioNext()} testID="practice.radio.next" />
+                  </View>
                 ) : mode !== 'follow' ? (
                   <>
                     <Field value={answer} onChangeText={setAnswer} placeholder="输入答案" testID="practice.answer" />
                     <PrimaryButton label="提交" onPress={() => void submit()} testID="practice.submit" />
                   </>
                 ) : (
-                  <PrimaryButton label="跟读完成，下一词" onPress={() => void submit('followed')} />
+                  <PrimaryButton disabled={!followTranscript} label="跟读完成，下一词" onPress={() => void submit(followTranscript)} testID="practice.follow.submit" />
                 )}
+                {mode === 'radio' ? <Meta>{`随身听${radioPaused ? '已暂停' : '播放中'} · 已记录 ${radioInteractionCount} 次操作`}</Meta> : null}
                 {feedback ? <Meta>{feedback}</Meta> : null}
                 {activeMode !== 'follow' && currentWord.examples?.length ? (
                   <View style={styles.exampleBox}>

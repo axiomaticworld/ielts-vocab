@@ -385,11 +385,28 @@ export function evaluatePracticeAnswer(
     }
   }
 
-  if (mode === 'follow' || mode === 'radio') {
+  if (mode === 'follow') {
+    const transcript = stripHtml(answer).trim()
+    if (!transcript) {
+      return {
+        correct: false,
+        expected: word.word,
+        feedback: '还没有识别到跟读内容，请先录音后再提交',
+      }
+    }
+    const correct = normalizeAnswer(transcript).includes(normalizeAnswer(word.word))
+    return {
+      correct,
+      expected: word.word,
+      feedback: correct ? `跟读记录已完成：${transcript}` : `识别为：${transcript}，请重读 ${word.word}`,
+    }
+  }
+
+  if (mode === 'radio') {
     return {
       correct: true,
       expected: word.word,
-      feedback: mode === 'follow' ? '跟读记录已完成' : '播放进度已记录',
+      feedback: '播放进度已记录',
     }
   }
 
