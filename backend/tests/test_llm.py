@@ -302,3 +302,14 @@ def test_stream_chat_events_uses_streaming_timeout_tuple(monkeypatch):
 
     assert events == []
     assert seen['timeout'] == (llm.CONNECT_TIMEOUT_SECONDS, max(llm.READ_TIMEOUT_SECONDS, 120))
+
+
+def test_journal_polish_service_imports_chat_streaming_and_falls_back(monkeypatch):
+    from services import journal_polish_service
+
+    def failing_chat(*args, **kwargs):
+        raise RuntimeError('provider down')
+
+    monkeypatch.setattr(journal_polish_service, 'chat', failing_chat)
+
+    assert journal_polish_service.polish_text('你好，我今天很帅') == '你好，我今天很帅'
