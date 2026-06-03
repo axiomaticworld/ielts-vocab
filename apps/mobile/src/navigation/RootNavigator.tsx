@@ -11,6 +11,7 @@ import {
   Settings,
   SquarePen,
   User,
+  X,
   type LucideIcon,
 } from 'lucide-react-native'
 import {
@@ -62,6 +63,7 @@ type HeaderAction = {
 
 type TabIconProps = {
   Icon: LucideIcon
+  menuOpen?: boolean
   primary: boolean
   selected: boolean
   screen: ScreenKey
@@ -104,7 +106,7 @@ const tabs = tabKeys
 const tabArtSources: Partial<Record<ScreenKey, ImageSourcePropType>> = {
   books: require('../assets/stickers/tab-books-drawn.png'),
   home: require('../assets/stickers/tab-home-drawn.png'),
-  practice: require('../assets/stickers/tab-practice-drawn.png'),
+  practice: require('../assets/stickers/tab-practice-edit-loop.png'),
   profile: require('../assets/stickers/tab-profile-drawn.png'),
   stats: require('../assets/stickers/tab-stats-drawn.png'),
 }
@@ -131,11 +133,20 @@ function buildHeaderActions(screen: ScreenKey, navigate: Navigate): HeaderAction
   return actions
 }
 
-function TabIcon({ Icon, primary, screen, selected }: TabIconProps) {
+function TabIcon({ Icon, menuOpen = false, primary, screen, selected }: TabIconProps) {
   const artSource = tabArtSources[screen]
   return (
-    <View style={[styles.tabIconBox, primary ? styles.tabIconBoxPrimary : null, selected ? styles.tabIconBoxSelected : null]}>
-      {artSource ? (
+    <View
+      style={[
+        styles.tabIconBox,
+        primary ? styles.tabIconBoxPrimary : null,
+        selected ? styles.tabIconBoxSelected : null,
+        primary && menuOpen ? styles.tabIconBoxPrimaryOpen : null,
+      ]}
+    >
+      {primary && menuOpen ? (
+        <X color={theme.colors.accentDark} size={24} strokeWidth={2.7} />
+      ) : artSource ? (
         <Image resizeMode="contain" source={artSource} style={[styles.tabDrawnIcon, primary ? styles.tabDrawnIconPrimary : null]} />
       ) : (
         <Icon
@@ -299,8 +310,8 @@ function MainTabs() {
       {showTabs ? (
         <View style={styles.tabBar}>
           {tabs.map(item => {
-            const active = item.key === routeState.current.screen
             const primary = item.key === 'practice'
+            const active = item.key === routeState.current.screen || (primary && practiceMenuOpen)
             return (
               <Pressable
                 accessibilityLabel={`底部导航-${item.label}`}
@@ -308,10 +319,15 @@ function MainTabs() {
                 accessibilityState={{ selected: active, expanded: primary ? practiceMenuOpen : undefined }}
                 key={item.key}
                 onPress={primary ? openPractice : () => navigate(item.key)}
-                style={[styles.tabButton, primary ? styles.tabButtonPrimary : null]}
+                style={({ pressed }) => [
+                  styles.tabButton,
+                  primary ? styles.tabButtonPrimary : null,
+                  primary && practiceMenuOpen ? styles.tabButtonPrimaryActive : null,
+                  pressed ? styles.tabButtonPressed : null,
+                ]}
                 testID={`tab.${item.key}`}
               >
-                <TabIcon Icon={item.Icon} primary={primary} screen={item.key} selected={active} />
+                <TabIcon Icon={item.Icon} menuOpen={primary && practiceMenuOpen} primary={primary} screen={item.key} selected={active} />
                 <Text style={[styles.tabLabel, primary ? styles.tabLabelPrimary : null, active ? styles.tabLabelActive : null]}>
                   {item.label}
                 </Text>

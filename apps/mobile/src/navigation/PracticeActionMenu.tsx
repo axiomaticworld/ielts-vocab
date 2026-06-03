@@ -10,7 +10,7 @@ type PracticeActionMenuProps = {
   onSelect: (mode: PracticeMode) => void
 }
 
-const shortcutModes: PracticeMode[] = ['smart', 'listening', 'meaning', 'dictation', 'quickmemory', 'follow', 'radio']
+const shortcutModes: PracticeMode[] = ['listening', 'smart', 'follow', 'dictation', 'meaning', 'errors', 'quickmemory', 'radio']
 const quickActionLabels: Record<PracticeMode, string> = {
   dictation: '听写',
   errors: '错词',
@@ -33,34 +33,30 @@ const modeStickerKeys: Record<PracticeMode, StickerKey> = {
   smart: 'studyBadgePractice',
   test: 'tapePin',
 }
-const centerActionSource = require('../assets/stickers/practice-quick-action.png')
-const centerOpenSource = require('../assets/stickers/tab-practice-entry-drawn.png')
-const ORBIT_ACTION_WIDTH = 68
-const ORBIT_BOTTOM_ALIGNMENT = -13
-const ORBIT_INNER_RADIUS_X = 126
-const ORBIT_INNER_RADIUS_Y = 93
-const ORBIT_OUTER_LIFT = 90
-const ORBIT_INNER_ANGLES = [165, 115, 65, 15]
-const ORBIT_INNER_MODES: PracticeMode[] = ['smart', 'listening', 'meaning', 'dictation']
-const ORBIT_OUTER_MODES: PracticeMode[] = ['quickmemory', 'follow', 'radio']
-const innerOrbitLayout = ORBIT_INNER_MODES.map((mode, index) => {
-  const radians = ((ORBIT_INNER_ANGLES[index] ?? 90) * Math.PI) / 180
+const centerActionSource = require('../assets/stickers/tab-practice-edit-loop.png')
+const ORBIT_ACTION_WIDTH = 74
+const TRIANGLE_NODE_SPACING = 102
+const TRIANGLE_ROW_HEIGHT = Math.round((TRIANGLE_NODE_SPACING * Math.sqrt(3)) / 2)
+const TRIANGLE_BASE_ROW_BOTTOM = 0
+
+function triangleNode(mode: PracticeMode, rowFromBase: number, columnOffset: number) {
   return {
-    bottom: Math.round((ORBIT_INNER_RADIUS_Y * Math.sin(radians)) + ORBIT_BOTTOM_ALIGNMENT),
+    bottom: TRIANGLE_BASE_ROW_BOTTOM + ((rowFromBase - 1) * TRIANGLE_ROW_HEIGHT),
     mode,
-    translateX: Math.round((ORBIT_INNER_RADIUS_X * Math.cos(radians)) - (ORBIT_ACTION_WIDTH / 2)),
+    translateX: Math.round((columnOffset * TRIANGLE_NODE_SPACING) - (ORBIT_ACTION_WIDTH / 2)),
   }
-})
-const outerOrbitLayout = ORBIT_OUTER_MODES.map((mode, index) => {
-  const left = innerOrbitLayout[index]
-  const right = innerOrbitLayout[index + 1]
-  return {
-    bottom: Math.round(((left.bottom + right.bottom) / 2) + ORBIT_OUTER_LIFT),
-    mode,
-    translateX: Math.round((left.translateX + right.translateX) / 2),
-  }
-})
-const orbitLayout = [...innerOrbitLayout, ...outerOrbitLayout]
+}
+
+const orbitLayout: Array<{ bottom: number; mode: PracticeMode; translateX: number }> = [
+  triangleNode('quickmemory', 1, -1.5),
+  triangleNode('radio', 1, 1.5),
+  triangleNode('dictation', 2, -1),
+  triangleNode('meaning', 2, 0),
+  triangleNode('errors', 2, 1),
+  triangleNode('smart', 3, -0.5),
+  triangleNode('follow', 3, 0.5),
+  triangleNode('listening', 4, 0),
+]
 
 function orbitStyle(mode: PracticeMode) {
   const layout = orbitLayout.find(item => item.mode === mode) ?? orbitLayout[0]
@@ -99,22 +95,12 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
             testID={`practice.quickAction.${mode}`}
           >
             <View style={styles.iconShell}>
-              <Sticker height={31} keyName={modeStickerKeys[mode]} width={31} />
+              <Sticker height={40} keyName={modeStickerKeys[mode]} width={40} />
             </View>
             <Text numberOfLines={1} style={styles.actionLabel}>{quickActionLabels[mode]}</Text>
           </Pressable>
         ))}
       </View>
-
-      <Pressable
-        accessibilityLabel="关闭练习快捷菜单"
-        accessibilityRole="button"
-        onPress={onDismiss}
-        style={styles.centerButton}
-        testID="practice.quickAction.center"
-      >
-        <Image resizeMode="contain" source={centerOpenSource} style={styles.centerIcon} />
-      </Pressable>
     </View>
   )
 }
@@ -137,28 +123,6 @@ const styles = StyleSheet.create({
   actionPressed: {
     opacity: 0.78,
   },
-  centerButton: {
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderRadius: 39,
-    bottom: 24,
-    height: 78,
-    justifyContent: 'center',
-    left: '50%',
-    position: 'absolute',
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { height: 5, width: 0 },
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    transform: [{ translateX: -39 }],
-    width: 78,
-    zIndex: 72,
-    elevation: 10,
-  },
-  centerIcon: {
-    height: 68,
-    width: 68,
-  },
   eyebrow: {
     color: '#D8662B',
     fontSize: 13,
@@ -178,15 +142,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFDF0',
     borderColor: '#4A3B32',
-    borderRadius: 21,
+    borderRadius: 29,
     borderWidth: 1,
-    height: 42,
+    height: 58,
     justifyContent: 'center',
     shadowColor: theme.colors.shadow,
     shadowOffset: { height: 4, width: 0 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    width: 42,
+    width: 58,
     elevation: 4,
   },
   orbitAction: {
@@ -199,7 +163,7 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#FFFDF0',
-    zIndex: 60,
+    zIndex: 35,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -209,16 +173,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: 'transparent',
     borderColor: 'transparent',
-    borderRadius: 184,
+    borderRadius: 250,
     borderWidth: 1,
-    bottom: 18,
-    height: 220,
+    bottom: 0,
+    height: 500,
     position: 'absolute',
-    width: 220,
+    width: 340,
   },
   orbitStage: {
-    bottom: 34,
-    height: 260,
+    bottom: 92,
+    height: 500,
     left: 0,
     position: 'absolute',
     right: 0,

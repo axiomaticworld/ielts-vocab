@@ -58,7 +58,7 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tabBar: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
     backgroundColor: '#F8C2A8',
     borderColor: '#E99A7A',
     borderTopLeftRadius: 22,
@@ -66,9 +66,10 @@ export const styles = StyleSheet.create({
     borderTopWidth: 1,
     flexDirection: 'row',
     gap: theme.spacing.xs,
+    height: 58,
     paddingHorizontal: theme.spacing.sm,
-    paddingBottom: 10,
-    paddingTop: 8,
+    paddingBottom: 0,
+    paddingTop: 0,
     shadowColor: theme.colors.shadow,
     shadowOffset: { height: -4, width: 0 },
     shadowOpacity: 0.07,
@@ -85,12 +86,17 @@ export const styles = StyleSheet.create({
     minHeight: 48,
     paddingVertical: 2,
   },
+  tabButtonPressed: {
+    opacity: 0.86,
+  },
   tabButtonPrimary: {
     backgroundColor: 'transparent',
-    marginTop: -18,
-    minHeight: 68,
+    minHeight: 48,
     shadowOpacity: 0,
     elevation: 0,
+  },
+  tabButtonPrimaryActive: {
+    backgroundColor: 'transparent',
   },
   tabIconBox: {
     alignItems: 'center',
@@ -99,19 +105,32 @@ export const styles = StyleSheet.create({
     width: 42,
   },
   tabIconBoxPrimary: {
-    height: 54,
+    height: 34,
+    width: 42,
+  },
+  tabIconBoxPrimaryOpen: {
+    backgroundColor: '#FFFDF0',
+    borderColor: 'rgba(111, 74, 56, 0.28)',
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    elevation: 7,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { height: 3, width: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 7,
     width: 54,
   },
   tabIconBoxSelected: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 253, 240, 0.45)',
+    borderRadius: theme.radius.pill,
   },
   tabDrawnIcon: {
     height: 34,
     width: 42,
   },
   tabDrawnIconPrimary: {
-    height: 54,
-    width: 54,
+    height: 34,
+    width: 42,
   },
   tabHeader: {
     flexDirection: 'row',
