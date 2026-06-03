@@ -32,6 +32,7 @@ export default function LearningJournalPage() {
     handleTabChange,
     resetDateFilters,
     saveJournalEntry,
+    setTodayDraftContent,
     polishContent,
     acceptPolish,
     rejectPolish,
@@ -84,6 +85,7 @@ export default function LearningJournalPage() {
           polishing={polishing}
           polishedPreview={polishedPreview}
           onSave={saveJournalEntry}
+          onDraftChange={setTodayDraftContent}
           onPolish={polishContent}
           onAcceptPolish={acceptPolish}
           onRejectPolish={rejectPolish}

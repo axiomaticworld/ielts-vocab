@@ -25,6 +25,7 @@ export function useLearningJournalPage() {
   const [editMode, setEditMode] = useState(false)
   const [polishing, setPolishing] = useState(false)
   const [polishedPreview, setPolishedPreview] = useState<string | null>(null)
+  const [todayDraftContent, setTodayDraftContent] = useState('')
 
   // ── History state ──
   const [historyEntries, setHistoryEntries] = useState<JournalEntry[]>([])
@@ -48,6 +49,7 @@ export function useLearningJournalPage() {
       const parsed = safeParse(JournalTodayResponseSchema, data)
       if (parsed.success) {
         setTodayEntry(parsed.data.entry)
+        setTodayDraftContent(parsed.data.entry?.content ?? '')
       }
     } catch {
       // Silently handle — entry is null
@@ -68,6 +70,7 @@ export function useLearningJournalPage() {
       const parsed = safeParse(JournalUpsertResponseSchema, data)
       if (parsed.success) {
         setTodayEntry(parsed.data.entry)
+        setTodayDraftContent(parsed.data.entry.content)
       }
     } catch {
       // Silently handle save error
@@ -75,8 +78,13 @@ export function useLearningJournalPage() {
   }, [])
 
   // ── Polish content ──
-  const polishContent = useCallback(async () => {
-    if (!todayEntry?.content) return
+  const polishContent = useCallback(async (contentOverride?: string) => {
+    const overrideContent = typeof contentOverride === 'string' ? contentOverride : undefined
+    const content = ((overrideContent ?? todayDraftContent) || todayEntry?.content || '').trim()
+    if (!content) {
+      window.alert('请先写一点内容再润色')
+      return
+    }
     setPolishing(true)
     setPolishedPreview(null)
 
@@ -84,18 +92,20 @@ export function useLearningJournalPage() {
       const data = await apiFetch<unknown>('/api/notes/journal/polish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: todayEntry.content }),
+        body: JSON.stringify({ content }),
       })
       const parsed = safeParse(JournalPolishResponseSchema, data)
       if (parsed.success && parsed.data.polished) {
         setPolishedPreview(parsed.data.polished)
+      } else {
+        window.alert('AI 润色失败，请重试')
       }
-    } catch {
-      // Silently handle
+    } catch (error) {
+      window.alert(getErrorMessage(error, 'AI 润色失败，请重试'))
     } finally {
       setPolishing(false)
     }
-  }, [todayEntry?.content])
+  }, [todayDraftContent, todayEntry?.content])
 
   const acceptPolish = useCallback(() => {
     if (!polishedPreview) return
@@ -237,6 +247,7 @@ export function useLearningJournalPage() {
     resetDateFilters,
     fetchToday,
     saveJournalEntry,
+    setTodayDraftContent,
     polishContent,
     acceptPolish,
     rejectPolish,

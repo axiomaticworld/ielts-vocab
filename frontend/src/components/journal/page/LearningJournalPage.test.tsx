@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import LearningJournalPage from './LearningJournalPage'
 
 const apiFetchMock = vi.fn()
+const tiptapMockState = vi.hoisted(() => ({
+  listeners: new Map<string, EventListener>(),
+}))
 
 vi.mock('../../../lib', async () => {
   const actual = await vi.importActual<typeof import('../../../lib')>('../../../lib')
@@ -24,8 +27,12 @@ vi.mock('@tiptap/react', () => ({
     getHTML: () => config.content || '<p></p>',
     view: {
       dom: {
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
+        addEventListener: vi.fn((type: string, handler: EventListener) => {
+          tiptapMockState.listeners.set(type, handler)
+        }),
+        removeEventListener: vi.fn((type: string) => {
+          tiptapMockState.listeners.delete(type)
+        }),
       },
     },
   }),
@@ -43,6 +50,7 @@ const todayEntry = {
 describe('LearningJournalPage diary view', () => {
   beforeEach(() => {
     apiFetchMock.mockReset()
+    tiptapMockState.listeners.clear()
     vi.spyOn(window, 'alert').mockImplementation(() => {})
   })
 
@@ -85,6 +93,7 @@ describe('LearningJournalPage diary view', () => {
   })
 
   it('renders diary images as capped top attachments', async () => {
+    const user = userEvent.setup()
     const imageMarkdown = Array.from({ length: 4 }, (_, index) => (
       `![image-${index + 1}](data:image/png;base64,card${index + 1})`
     )).join('\n')
@@ -112,6 +121,42 @@ describe('LearningJournalPage diary view', () => {
     expect(container.querySelectorAll('.journal-image-card:not(.journal-image-card--add)')).toHaveLength(3)
     expect(screen.getByText('3/3')).toBeInTheDocument()
     expect(body?.textContent).not.toContain('image-1')
+
+    await user.click(screen.getByRole('button', { name: '预览图片 1' }))
+
+    expect(await screen.findByRole('dialog', { name: '日记图片预览' })).toBeInTheDocument()
+    expect(screen.getByAltText('日记图片预览 1')).toHaveAttribute('src', 'data:image/png;base64,card1')
+
+    await user.click(screen.getByRole('button', { name: '关闭日记图片预览' }))
+
+    expect(screen.queryByRole('dialog', { name: '日记图片预览' })).not.toBeInTheDocument()
+  })
+
+  it('does not render the insert-image context menu after reaching the image limit', async () => {
+    const imageMarkdown = Array.from({ length: 3 }, (_, index) => (
+      `![image-${index + 1}](data:image/png;base64,card${index + 1})`
+    )).join('\n')
+    apiFetchMock.mockImplementation((url: string) => {
+      if (url === '/api/notes/journal/today') {
+        return Promise.resolve({
+          entry: {
+            ...todayEntry,
+            content: `# 你好\n\n${imageMarkdown}`,
+          },
+        })
+      }
+      return Promise.reject(new Error(`Unexpected url: ${url}`))
+    })
+
+    const user = userEvent.setup()
+    render(<LearningJournalPage />)
+    await user.click(await screen.findByRole('button', { name: '编辑笔记' }))
+
+    await waitFor(() => expect(tiptapMockState.listeners.has('contextmenu')).toBe(true))
+    tiptapMockState.listeners.get('contextmenu')?.(new MouseEvent('contextmenu', { clientX: 10, clientY: 20, cancelable: true }))
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.queryByText('插入图片')).not.toBeInTheDocument()
   })
 
   it('loads history entries after switching to the history tab', async () => {
@@ -172,5 +217,26 @@ describe('LearningJournalPage diary view', () => {
         expect.objectContaining({ method: 'POST' }),
       )
     })
+  })
+
+  it('shows feedback instead of silently ignoring polish on empty content', async () => {
+    const alertSpy = vi.spyOn(window, 'alert')
+    const user = userEvent.setup()
+    apiFetchMock.mockImplementation((url: string) => {
+      if (url === '/api/notes/journal/today') {
+        return Promise.resolve({ entry: { ...todayEntry, content: '' } })
+      }
+      return Promise.reject(new Error(`Unexpected url: ${url}`))
+    })
+
+    render(<LearningJournalPage />)
+    await user.click(await screen.findByRole('button', { name: '编辑笔记' }))
+    await user.click(await screen.findByRole('button', { name: 'AI 润色' }))
+
+    expect(alertSpy).toHaveBeenCalledWith('请先写一点内容再润色')
+    expect(apiFetchMock).not.toHaveBeenCalledWith(
+      '/api/notes/journal/polish',
+      expect.anything(),
+    )
   })
 })

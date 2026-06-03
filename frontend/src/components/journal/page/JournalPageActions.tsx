@@ -47,7 +47,7 @@ export function TodayNotesActions({
         <button
           className="journal-polish-btn"
           disabled={polishing}
-          onClick={onPolish}
+          onClick={() => onPolish()}
           title="AI 润色"
           aria-label="AI 润色"
         >

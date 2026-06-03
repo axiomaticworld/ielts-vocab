@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import { createPortal } from 'react-dom'
 import { htmlToMarkdown } from '../../../lib/htmlToMarkdown'
 import { renderJournalMarkdown } from '../../../lib/journalMarkdown'
 import type { JournalEntry } from '../../../lib/schemas'
@@ -12,7 +13,8 @@ interface TodayNotesDocumentProps {
   polishing: boolean
   polishedPreview: string | null
   onSave: (content: string) => void
-  onPolish: () => void
+  onDraftChange: (content: string) => void
+  onPolish: (content?: string) => void
   onAcceptPolish: () => void
   onRejectPolish: () => void
   formatDateTime: (iso: string) => string
@@ -32,6 +34,9 @@ interface ImageGalleryProps {
 }
 
 function ImageGallery({ images, isReadOnly, onAddImage, onRemove }: ImageGalleryProps) {
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null)
+  const previewSrc = previewIndex === null ? null : images[previewIndex] ?? null
+
   if (images.length === 0 && isReadOnly) return null
 
   return (
@@ -46,7 +51,9 @@ function ImageGallery({ images, isReadOnly, onAddImage, onRemove }: ImageGallery
       <div className={`journal-image-card-grid ${isReadOnly ? 'journal-image-card-grid--readonly' : ''}`}>
         {images.map((src, i) => (
           <figure key={i} className="journal-image-card">
-            <img src={src} alt={`附件 ${i + 1}`} />
+            <button type="button" className="journal-image-card__preview" aria-label={`预览图片 ${i + 1}`} onClick={() => setPreviewIndex(i)}>
+              <img src={src} alt={`附件 ${i + 1}`} />
+            </button>
             <figcaption>图片 {i + 1}</figcaption>
             {!isReadOnly && (
               <button className="journal-image-card__remove" title="移除图片" aria-label={`移除图片 ${i + 1}`} onClick={() => onRemove(i)}>
@@ -69,21 +76,34 @@ function ImageGallery({ images, isReadOnly, onAddImage, onRemove }: ImageGallery
           </button>
         ) : null}
       </div>
+      {previewSrc && createPortal(
+        <div className="bug-screenshot-preview-overlay" role="dialog" aria-modal="true" aria-label="日记图片预览" onClick={event => event.target === event.currentTarget && setPreviewIndex(null)}>
+          <div className="bug-screenshot-preview">
+            <div className="bug-screenshot-preview__header">
+              <strong>图片 {previewIndex! + 1}</strong>
+              <button type="button" aria-label="关闭日记图片预览" onClick={() => setPreviewIndex(null)}>×</button>
+            </div>
+            <div className="bug-screenshot-preview__image-stage">
+              <img src={previewSrc} alt={`日记图片预览 ${previewIndex! + 1}`} />
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </section>
   )
 }
 
 /* ── Context Menu ── */
 
-function EditorContextMenu({ x, y, onClose, onInsertImage, imagesCount }: { x: number; y: number; onClose: () => void; onInsertImage: () => void; imagesCount: number }) {
-  const full = imagesCount >= 3
+function EditorContextMenu({ x, y, onClose, onInsertImage }: { x: number; y: number; onClose: () => void; onInsertImage: () => void }) {
   return (
     <div className="journal-ctx-menu" style={{ left: x, top: y }} role="menu">
-      <button className="journal-ctx-menu-item" role="menuitem" disabled={full} onClick={() => { onInsertImage(); onClose() }}>
+      <button className="journal-ctx-menu-item" role="menuitem" onClick={() => { onInsertImage(); onClose() }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
         </svg>
-        <span>插入图片{full ? '（最多3张）' : ''}</span>
+        <span>插入图片</span>
       </button>
     </div>
   )
@@ -133,7 +153,7 @@ function stripImages(content: string): string {
 /* ── Main Component ── */
 
 export default function TodayNotesDocument({
-  entry, editMode, polishing, polishedPreview, onSave, onPolish, onAcceptPolish, onRejectPolish, formatDateTime,
+  entry, editMode, polishing, polishedPreview, onSave, onDraftChange, onPolish, onAcceptPolish, onRejectPolish, formatDateTime,
 }: TodayNotesDocumentProps) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showPolishModal, setShowPolishModal] = useState(false)
@@ -156,8 +176,9 @@ export default function TodayNotesDocument({
     editorProps: { attributes: { class: 'journal-editor-content' } },
     onUpdate: ({ editor }) => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      const md = htmlToMarkdown(editor.getHTML())
+      onDraftChange(md)
       saveTimerRef.current = setTimeout(() => {
-        const md = htmlToMarkdown(editor.getHTML())
         saveCombined(md, images)
       }, 2000)
     },
@@ -166,8 +187,9 @@ export default function TodayNotesDocument({
   const saveCombined = useCallback((textMd: string, imgs: string[]) => {
     const imgBlock = imgs.slice(0, MAX_JOURNAL_IMAGES).map((src, i) => `![image-${i + 1}](${src})`).join('\n')
     const combined = [textMd.trim(), imgBlock].filter(Boolean).join('\n\n')
+    onDraftChange(textMd.trim())
     onSave(combined)
-  }, [onSave])
+  }, [onDraftChange, onSave])
 
   const insertImage = useCallback(() => {
     if (images.length >= MAX_JOURNAL_IMAGES) return
@@ -206,10 +228,20 @@ export default function TodayNotesDocument({
   useEffect(() => {
     if (!editor || !editMode) return
     const el = editor.view.dom
-    const onCtx = (e: MouseEvent) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, visible: true }) }
+    const onCtx = (e: MouseEvent) => {
+      if (images.length >= MAX_JOURNAL_IMAGES) return
+      e.preventDefault()
+      setCtxMenu({ x: e.clientX, y: e.clientY, visible: true })
+    }
     el.addEventListener('contextmenu', onCtx)
     return () => el.removeEventListener('contextmenu', onCtx)
-  }, [editor, editMode])
+  }, [editor, editMode, images.length])
+
+  useEffect(() => {
+    if (images.length >= MAX_JOURNAL_IMAGES) {
+      setCtxMenu(prev => ({ ...prev, visible: false }))
+    }
+  }, [images.length])
 
   useEffect(() => {
     if (!editor) return
@@ -219,6 +251,10 @@ export default function TodayNotesDocument({
       if (cur !== target) editor.commands.setContent(target)
     }
   }, [textContent, editor, editMode])
+
+  useEffect(() => {
+    onDraftChange(textContent)
+  }, [onDraftChange, textContent])
 
   useEffect(() => { if (polishedPreview) { setPolishContent(polishedPreview); setShowPolishModal(true) } }, [polishedPreview])
 
@@ -234,12 +270,12 @@ export default function TodayNotesDocument({
   if (editMode) {
     return (
       <div className="journal-doc-shell journal-doc-shell--today">
-        {ctxMenu.visible && <EditorContextMenu x={ctxMenu.x} y={ctxMenu.y} onClose={() => setCtxMenu(prev => ({ ...prev, visible: false }))} onInsertImage={insertImage} imagesCount={images.length} />}
+        {ctxMenu.visible && images.length < MAX_JOURNAL_IMAGES && <EditorContextMenu x={ctxMenu.x} y={ctxMenu.y} onClose={() => setCtxMenu(prev => ({ ...prev, visible: false }))} onInsertImage={insertImage} />}
         {showPolishModal && editor && (
           <PolishModal original={htmlToMarkdown(editor.getHTML())} polished={polishContent}
             onAccept={() => { setShowPolishModal(false); onAcceptPolish() }}
             onReject={() => { setShowPolishModal(false); onRejectPolish() }}
-            onContinuePolish={onPolish} polishing={polishing} />
+            onContinuePolish={() => onPolish(htmlToMarkdown(editor.getHTML()))} polishing={polishing} />
         )}
         <div className="journal-today-stack journal-today-stack--edit">
           <ImageGallery images={images} onAddImage={insertImage} onRemove={removeImage} />
