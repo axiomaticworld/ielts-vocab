@@ -120,6 +120,20 @@ describe('mobile practice engine', () => {
     assert.equal(quick.bookId, 'book-1')
   })
 
+  it('requires speech evidence before counting follow practice as correct', () => {
+    const missingEvidence = evaluatePracticeAnswer(word, 'follow', '')
+    assert.equal(missingEvidence.correct, false)
+    assert.match(missingEvidence.feedback, /还没有识别到跟读内容/)
+
+    const recognizedTarget = evaluatePracticeAnswer(word, 'follow', 'I read dynamic clearly')
+    assert.equal(recognizedTarget.correct, true)
+    assert.match(recognizedTarget.feedback, /I read dynamic clearly/)
+
+    const recognizedOtherWord = evaluatePracticeAnswer(word, 'follow', 'static')
+    assert.equal(recognizedOtherWord.correct, false)
+    assert.match(recognizedOtherWord.feedback, /识别为：static/)
+  })
+
   it('creates option and export helpers for mobile screens', () => {
     const options = buildPracticeOptions(word, [
       word,

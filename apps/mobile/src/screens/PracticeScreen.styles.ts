@@ -288,6 +288,10 @@ export const styles = StyleSheet.create({
   rejectButton: {
     backgroundColor: theme.colors.dangerSoft,
   },
+  radioControls: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
   sheetBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(15, 23, 42, 0.28)',
