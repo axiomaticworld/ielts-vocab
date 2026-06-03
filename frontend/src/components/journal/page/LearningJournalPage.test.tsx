@@ -217,6 +217,12 @@ describe('LearningJournalPage diary view', () => {
         expect.objectContaining({ method: 'POST' }),
       )
     })
+
+    const dialog = await screen.findByRole('dialog', { name: 'AI 润色预览' })
+    expect(dialog).toHaveTextContent('确认润色结果后再应用到今天的日记正文。')
+    expect(screen.getByRole('button', { name: '继续润色' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '拒绝' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '接受修改' })).toBeInTheDocument()
   })
 
   it('shows feedback instead of silently ignoring polish on empty content', async () => {

@@ -6,6 +6,8 @@ import { createPortal } from 'react-dom'
 import { htmlToMarkdown } from '../../../lib/htmlToMarkdown'
 import { renderJournalMarkdown } from '../../../lib/journalMarkdown'
 import type { JournalEntry } from '../../../lib/schemas'
+import { Button } from '../../ui/Button'
+import { Modal } from '../../ui/Modal'
 
 interface TodayNotesDocumentProps {
   entry: JournalEntry | null
@@ -115,26 +117,28 @@ function PolishModal({ original, polished, onAccept, onReject, onContinuePolish,
   original: string; polished: string; onAccept: () => void; onReject: () => void; onContinuePolish: () => void; polishing: boolean
 }) {
   return (
-    <div className="journal-polish-overlay" role="dialog" aria-modal="true">
+    <Modal isOpen onClose={onReject} title="AI 润色预览" size="xl" closeOnOverlay={false}>
       <div className="journal-polish-modal">
-        <h2 className="journal-polish-modal__title">AI 润色预览</h2>
+        <p className="journal-polish-modal__intro">确认润色结果后再应用到今天的日记正文。</p>
         <div className="journal-polish-modal__grid">
-          <div className="journal-polish-modal__col">
-            <span className="journal-polish-modal__label">原文</span>
+          <section className="journal-polish-modal__col" aria-label="原文">
+            <h3 className="journal-polish-modal__label">原文</h3>
             <div className="journal-polish-modal__content markdown-content" dangerouslySetInnerHTML={{ __html: renderJournalMarkdown(original) }} />
-          </div>
-          <div className="journal-polish-modal__col">
-            <span className="journal-polish-modal__label">润色后</span>
+          </section>
+          <section className="journal-polish-modal__col journal-polish-modal__col--result" aria-label="润色后">
+            <h3 className="journal-polish-modal__label">润色后</h3>
             <div className="journal-polish-modal__content markdown-content" dangerouslySetInnerHTML={{ __html: renderJournalMarkdown(polished) }} />
-          </div>
+          </section>
         </div>
-        <div className="journal-polish-modal__actions">
-          <button className="journal-polish-btn journal-polish-btn--continue" onClick={onContinuePolish} disabled={polishing}>{polishing ? '润色中...' : '🔄 继续润色'}</button>
-          <button className="journal-polish-btn journal-polish-btn--reject" onClick={onReject}>❌ 拒绝</button>
-          <button className="journal-polish-btn journal-polish-btn--accept" onClick={onAccept}>✅ 接受修改</button>
+        <div className="ui-modal__actions journal-polish-modal__actions">
+          <Button variant="secondary" onClick={onContinuePolish} isLoading={polishing}>
+            {polishing ? '润色中' : '继续润色'}
+          </Button>
+          <Button variant="ghost" onClick={onReject}>拒绝</Button>
+          <Button onClick={onAccept}>接受修改</Button>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 

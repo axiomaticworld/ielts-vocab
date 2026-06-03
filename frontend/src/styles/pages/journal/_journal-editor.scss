@@ -139,112 +139,72 @@
 
 /* ── Polish Modal ── */
 
-.journal-polish-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(var(--size-4));
-}
-
 .journal-polish-modal {
-  width: min(90vw, 800px);
-  max-height: 85vh;
   display: flex;
   flex-direction: column;
-  gap: var(--size-16);
-  padding: var(--size-20);
-  border-radius: var(--size-16);
-  background: var(--surface-base);
-  box-shadow: var(--shadow-lift);
-  overflow: hidden;
+  gap: var(--size-14);
 }
 
-.journal-polish-modal__title {
+.journal-polish-modal__intro {
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--text-primary);
+  color: var(--text-secondary);
+  font-size: var(--size-13);
+  line-height: 1.6;
 }
 
 .journal-polish-modal__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--size-12);
+  gap: var(--size-14);
   min-height: 0;
-  overflow: hidden;
 }
 
 .journal-polish-modal__col {
   display: flex;
   flex-direction: column;
-  gap: var(--size-8);
+  gap: var(--size-10);
   min-height: 0;
-  overflow: hidden;
+  padding: var(--size-14);
+  border: var(--size-1) solid var(--border-subtle);
+  border-radius: var(--size-14);
+  background: color-mix(in srgb, var(--surface-muted) var(--mix-54), var(--surface-base));
+}
+
+.journal-polish-modal__col--result {
+  border-color: color-mix(in srgb, var(--accent) var(--mix-24), var(--border-subtle));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) var(--mix-8), transparent), transparent 44%),
+    color-mix(in srgb, var(--surface-muted) var(--mix-54), var(--surface-base));
 }
 
 .journal-polish-modal__label {
-  font-size: 0.78rem;
+  margin: 0;
+  font-size: var(--size-13);
   font-weight: 700;
   color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 
 .journal-polish-modal__content {
   flex: 1;
   min-height: 0;
+  max-height: min(34vh, 320px);
   overflow-y: auto;
-  padding: var(--size-12);
-  border-radius: var(--size-10);
-  background: color-mix(in srgb, var(--surface-muted) var(--mix-60), var(--surface-base));
+  padding: var(--size-12) var(--size-14);
+  border: var(--size-1) solid var(--border-subtle);
+  border-radius: var(--size-12);
+  background: var(--surface-base);
   font-size: 0.9rem;
   line-height: 1.75;
 }
 
 .journal-polish-modal__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--size-10);
-  padding-top: var(--size-10);
-  border-top: var(--size-1) solid var(--border-subtle);
+  margin-top: var(--size-2);
 }
 
-.journal-polish-btn--accept {
-  @include accent-button(var(--size-40), 0 var(--size-16), var(--size-10), var(--accent), var(--text-inverse), var(--size-1) solid transparent, 0.88rem, 700);
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--glow-accent);
-  }
-}
-
-.journal-polish-btn--reject {
-  @include control-button(var(--size-40), 0 var(--size-16), var(--size-10), var(--size-1) solid var(--border), var(--surface-base), var(--text-secondary), 0.88rem, 600);
-
-  &:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    color: var(--text-primary);
-  }
-}
-
-.journal-polish-btn--continue {
-  @include control-button(var(--size-40), 0 var(--size-16), var(--size-10), var(--size-1) solid var(--border), transparent, var(--text-secondary), 0.88rem, 600);
-
-  &:hover:not(:disabled) {
-    border-color: var(--accent);
-    color: var(--accent);
-    color: var(--text-primary);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-  }
+.journal-polish-modal__actions .ui-button {
+  min-width: var(--size-96);
+  white-space: nowrap;
 }
 
 /* ── Shell overrides for today ── */
@@ -466,6 +426,22 @@
 }
 
 @media (max-width: 760px) {
+  .journal-polish-modal__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .journal-polish-modal__content {
+    max-height: 24vh;
+  }
+
+  .journal-polish-modal__actions {
+    flex-wrap: wrap;
+  }
+
+  .journal-polish-modal__actions .ui-button {
+    flex: 1 1 var(--size-120);
+  }
+
   .journal-image-panel {
     max-width: 100%;
   }
