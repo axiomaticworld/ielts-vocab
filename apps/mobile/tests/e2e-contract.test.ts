@@ -2,6 +2,18 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, it } from 'node:test'
+import {
+  buildMobileWrongWordsReviewQueue,
+  buildNextErrorReviewRoundWords,
+  buildProgressSnapshot,
+  buildQuickMemoryReviewQueuePath,
+  buildQuickMemorySyncRecord,
+  buildWrongWordRecord,
+  evaluatePracticeAnswer,
+  updateErrorReviewRoundResults,
+  type MobileWord,
+  type WrongWord,
+} from '@ielts-vocab/app-core'
 
 const mobileRoot = new URL('..', import.meta.url).pathname
 const workspaceRoot = join(mobileRoot, '..', '..')
@@ -33,6 +45,11 @@ const requiredSelectorNeedles = [
   'practice.quickAction.${mode}',
   'practice.quickAction.center',
   'practice.entry.${item.key}',
+  'practice.controlSurface',
+  'practice.control.wordList',
+  'practice.control.favorite',
+  'practice.control.pronunciation',
+  'practice.control.settings',
   'practice.quickmemory.known',
   'ai.prompt',
   'feedback.title',
@@ -46,6 +63,37 @@ const requiredHomeObjectKeys = [
 
 function read(relativePath: string): string {
   return readFileSync(join(workspaceRoot, relativePath), 'utf8')
+}
+
+function makeWord(word: string): MobileWord {
+  return {
+    book_id: 'book-a',
+    book_title: 'Book A',
+    chapter_id: '1',
+    chapter_title: 'Chapter 1',
+    definition: `${word} definition`,
+    examples: [],
+    group_key: '',
+    listening_confusables: [],
+    phonetic: '',
+    pos: 'n.',
+    word,
+  }
+}
+
+function makeWrongWord(word: string, mistakeType: string): WrongWord {
+  return {
+    ...makeWord(word),
+    dimension_states: {},
+    ebbinghaus_completed: false,
+    ebbinghaus_remaining: 0,
+    ebbinghaus_streak: 0,
+    last_error_at: '',
+    mistake_type: mistakeType,
+    pending_dimensions: [],
+    recognition_pass_streak: 0,
+    wrong_count: 1,
+  }
 }
 
 describe('mobile Maestro E2E contract', () => {
@@ -75,6 +123,7 @@ describe('mobile Maestro E2E contract', () => {
       read('apps/mobile/src/components/StudyRoomScene.tsx'),
       read('apps/mobile/src/screens/LoginScreen.tsx'),
       read('apps/mobile/src/components/AccountLoginPane.tsx'),
+      read('apps/mobile/src/screens/PracticeControlSurface.tsx'),
       read('apps/mobile/src/screens/PracticeEntryPanel.tsx'),
       read('apps/mobile/src/screens/PracticeScreen.tsx'),
       read('apps/mobile/src/screens/SearchScreen.tsx'),
@@ -254,5 +303,68 @@ describe('mobile Maestro E2E contract', () => {
     assert.match(practiceEntrySource, /style=\{\(\{ pressed \}\) => \[styles\.modeShortcut, pressed \? styles\.modeShortcutPressed : null\]\}/)
     assert.match(practiceStyles, /modeShortcutRail: \{/)
     assert.match(practiceStyles, /entryTilePressed: \{/)
+  })
+
+  it('keeps the mobile practice control surface wired to list, settings, favorite, and pronunciation actions', () => {
+    const controlSource = read('apps/mobile/src/screens/PracticeControlSurface.tsx')
+    const screenSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
+    const dueReviewFlow = read('apps/mobile/e2e/maestro/01-book-chapter-practice.yaml')
+
+    assert.match(screenSource, /<PracticeControlSurface/)
+    assert.match(controlSource, /testID="practice\.controlSurface"/)
+    assert.match(controlSource, /testID="practice\.control\.wordList"/)
+    assert.match(controlSource, /testID="practice\.control\.favorite"/)
+    assert.match(controlSource, /setFavorite\(currentWord\.word, nextActive\)/)
+    assert.match(controlSource, /testID="practice\.control\.pronunciation"/)
+    assert.match(controlSource, /onPlayWord/)
+    assert.match(controlSource, /testID="practice\.control\.settings"/)
+    assert.match(controlSource, /testID="practice\.settings\.restart"/)
+    assert.match(controlSource, /testID=\{`practice\.wordList\.item\.\$\{itemIndex\}`\}/)
+    assert.match(dueReviewFlow, /id: practice\.controlSurface/)
+    assert.match(dueReviewFlow, /id: practice\.control\.wordList/)
+    assert.match(dueReviewFlow, /visible: 练习设置/)
+  })
+
+  it('covers the due-review quick-memory chain from queue path through answer persistence payloads', () => {
+    const queue = [makeWord('alpha'), makeWord('beta')]
+    const path = buildQuickMemoryReviewQueuePath({
+      bookId: 'book-a',
+      chapterId: '1',
+      limit: 10,
+      offset: 0,
+      withinDays: 3,
+    })
+    const known = evaluatePracticeAnswer(queue[0], 'quickmemory', 'known')
+    const unknown = evaluatePracticeAnswer(queue[1], 'quickmemory', 'unknown')
+    const record = buildQuickMemorySyncRecord(queue[1], false, 1_700_000_000_000)
+    const snapshot = buildProgressSnapshot({ correctCount: 1, currentIndex: 2, queue, wrongCount: 1 })
+
+    assert.equal(path, '/api/ai/quick-memory/review-queue?limit=10&within_days=3&offset=0&scope=due&book_id=book-a&chapter_id=1')
+    assert.equal(known.correct, true)
+    assert.equal(unknown.correct, false)
+    assert.equal(record.status, 'unknown')
+    assert.equal(record.bookId, 'book-a')
+    assert.equal(record.chapterId, '1')
+    assert.deepEqual(snapshot.answeredWords, ['alpha', 'beta'])
+    assert.equal(snapshot.isCompleted, true)
+  })
+
+  it('covers the wrong-word recovery chain from filtered queue through retry-round selection', () => {
+    const wrongWords = [
+      makeWrongWord('alpha', 'recognition'),
+      makeWrongWord('beta', 'dictation'),
+    ]
+    const queue = buildMobileWrongWordsReviewQueue(wrongWords, { dimension: 'dictation' }, [])
+    const result = evaluatePracticeAnswer(queue[0], 'dictation', 'wrong spelling')
+    const record = buildWrongWordRecord(queue[0], 'dictation')
+    const roundResults = updateErrorReviewRoundResults({}, queue[0].word, result.correct)
+    const retry = buildNextErrorReviewRoundWords(queue, roundResults)
+
+    assert.deepEqual(queue.map(item => item.word), ['beta'])
+    assert.equal(result.correct, false)
+    assert.equal(record.mistake_type, 'dictation')
+    assert.deepEqual(record.pending_dimensions, ['dictation'])
+    assert.deepEqual(roundResults, { beta: false })
+    assert.deepEqual(retry.map(item => item.word), ['beta'])
   })
 })

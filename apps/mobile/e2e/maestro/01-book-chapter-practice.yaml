@@ -20,5 +20,27 @@ appId: com.axiomaticworld.ieltsvocab
     visible:
       id: practice.quickmemory.known
     timeout: 30000
+- assertVisible:
+    id: practice.controlSurface
+- assertVisible:
+    id: practice.control.wordList
+- assertVisible:
+    id: practice.control.favorite
+- assertVisible:
+    id: practice.control.pronunciation
+- assertVisible:
+    id: practice.control.settings
+- tapOn:
+    id: practice.control.wordList
+- extendedWaitUntil:
+    visible: 单词列表
+    timeout: 10000
+- pressKey: Back
+- tapOn:
+    id: practice.control.settings
+- extendedWaitUntil:
+    visible: 练习设置
+    timeout: 10000
+- pressKey: Back
 - tapOn:
     id: practice.quickmemory.unknown
