@@ -165,6 +165,7 @@ export function BooksScreen({
                 style={styles.bookCard}
                 testID={`books.book.${String(book.id)}`}
               >
+                <View style={styles.cardGlow} />
                 <View style={styles.bookMain}>
                   <View style={styles.titleRow}>
                     <Text numberOfLines={1} style={styles.bookTitle}>{book.title}</Text>
@@ -228,6 +229,7 @@ export function BooksScreen({
                 style={styles.chapterRow}
                 testID={`books.chapter.${String(chapter.id)}`}
               >
+                <View style={styles.cardGlow} />
                 <View style={styles.chapterIndex}>
                   <Text style={styles.chapterIndexText}>{String(index + 1).padStart(2, '0')}</Text>
                 </View>
@@ -259,14 +261,21 @@ export function BooksScreen({
 const styles = StyleSheet.create({
   bookCard: {
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceElevated,
-    borderColor: theme.colors.border,
+    backgroundColor: 'rgba(255, 251, 241, 0.84)',
+    borderColor: 'rgba(116, 72, 36, 0.22)',
     borderRadius: theme.radius.card,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 2,
     flexDirection: 'row',
     gap: theme.spacing.md,
     marginBottom: theme.spacing.sm,
+    minHeight: 118,
+    overflow: 'hidden',
     padding: theme.spacing.md,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 9,
   },
   bookDesc: {
     color: theme.colors.muted,
@@ -298,14 +307,21 @@ const styles = StyleSheet.create({
   },
   chapterRow: {
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceElevated,
-    borderColor: theme.colors.border,
+    backgroundColor: 'rgba(255, 251, 241, 0.84)',
+    borderColor: 'rgba(116, 72, 36, 0.22)',
     borderRadius: theme.radius.card,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 2,
     flexDirection: 'row',
     gap: theme.spacing.md,
     marginBottom: theme.spacing.sm,
+    minHeight: 84,
+    overflow: 'hidden',
     padding: theme.spacing.md,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 9,
   },
   chapterTitle: {
     color: theme.colors.text,
@@ -343,7 +359,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   selectedCard: {
-    backgroundColor: theme.colors.surfaceElevated,
+    backgroundColor: 'transparent',
   },
   selectedHead: {
     flexDirection: 'row',
@@ -355,5 +371,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: theme.spacing.xs,
+  },
+  cardGlow: {
+    backgroundColor: 'rgba(255, 255, 255, 0.38)',
+    borderRadius: theme.radius.pill,
+    height: 34,
+    left: 12,
+    position: 'absolute',
+    right: 12,
+    top: 8,
   },
 })

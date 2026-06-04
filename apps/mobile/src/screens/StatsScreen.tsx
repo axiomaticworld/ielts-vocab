@@ -63,6 +63,7 @@ function shortDate(value: unknown): string {
 function SummaryMetric({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.metricCard}>
+      <View style={styles.metricGlow} />
       <Text style={styles.metricValue}>{value}</Text>
       <Text style={styles.metricLabel}>{label}</Text>
     </View>
