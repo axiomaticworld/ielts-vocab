@@ -242,10 +242,6 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
 
 const styles = StyleSheet.create({
   actionLabel: {
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderColor: 'rgba(240, 177, 129, 0.9)',
-    borderRadius: theme.radius.pill,
-    borderWidth: 1,
     color: theme.colors.text,
     fontSize: 10,
     fontWeight: '900',
@@ -301,18 +297,9 @@ const styles = StyleSheet.create({
   },
   iconShell: {
     alignItems: 'center',
-    backgroundColor: '#FFFDF0',
-    borderColor: '#4A3B32',
-    borderRadius: 23,
-    borderWidth: 1,
     height: 46,
     justifyContent: 'center',
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
     width: 46,
-    elevation: 4,
   },
   orbitAction: {
     left: '50%',
