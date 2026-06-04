@@ -163,6 +163,17 @@ describe('mobile Maestro E2E contract', () => {
     assert.equal(sceneSource.includes('railItem'), false)
   })
 
+  it('binds home scene text to art containers and live numeric badges', () => {
+    const sceneSource = read('apps/mobile/src/components/StudyRoomScene.tsx')
+    const sceneStyles = read('apps/mobile/src/components/StudyRoomScene.styles.ts')
+
+    assert.match(sceneSource, /testID="home\.hero\.rewardPlaque"/)
+    assert.match(sceneSource, /function formatSideEntryBadge/)
+    assert.equal(sceneSource.includes('sideEntryTestBadges'), false)
+    assert.match(sceneStyles, /heroRewardPlaque/)
+    assert.match(sceneStyles, /heroRewardIcon/)
+  })
+
   it('sizes the home board from the hidden scene layout guide', () => {
     const sceneSource = read('apps/mobile/src/components/StudyRoomScene.tsx')
 

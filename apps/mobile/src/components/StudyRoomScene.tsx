@@ -62,9 +62,11 @@ const sideEntryArt: Record<string, StickerKey> = {
   'wrong-kit': 'studyBadgeWrong',
 }
 
-const sideEntryTestBadges: Record<string, string> = {
-  'todo-list': '128',
-  'wrong-kit': '1288',
+function formatSideEntryBadge(entry: StudyRoomObject): string {
+  if (entry.key === 'practice-yard') return '练'
+  const numberMatch = entry.value.match(/\d+/)
+  if (numberMatch) return numberMatch[0]
+  return entry.value.slice(0, 2)
 }
 
 function SideEntryArt({
@@ -242,6 +244,13 @@ export function StudyRoomScene({
             <Text style={styles.heroEyebrow}>今日主线</Text>
             <Text numberOfLines={2} style={styles.heroTitle}>{heroAction.label}</Text>
             <Text numberOfLines={2} style={styles.heroHint}>{heroAction.hint}</Text>
+            <View style={styles.heroRewardPlaque} testID="home.hero.rewardPlaque">
+              <Sticker height={26} keyName="treasureBox" style={styles.heroRewardIcon} width={26} />
+              <View style={styles.heroRewardCopy}>
+                <Text style={styles.heroRewardLabel}>行动铭牌</Text>
+                <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={styles.heroRewardValue}>{heroAction.value}</Text>
+              </View>
+            </View>
             <Pressable accessibilityLabel="继续今日学习" accessibilityRole="button" onPress={() => go(heroAction)} style={styles.heroButton} testID="home.hero.continue">
               <Text style={styles.heroButtonText}>{heroAction.ctaLabel}</Text>
             </Pressable>
@@ -267,10 +276,10 @@ export function StudyRoomScene({
       <View style={[styles.iconDock, { top: SCENE_BOARD_TOP }]}>
         <Sticker height={70} keyName="studyDecorMascot" width={72} />
         {sideEntries.map(object => {
-          const badge = sideEntryTestBadges[object.key] ?? ''
+          const badge = formatSideEntryBadge(object)
           const artKey = sideEntryArt[object.key] ?? 'studyBadgePractice'
           return (
-            <Pressable accessibilityLabel={`自习室-${object.label}`} accessibilityRole="button" key={object.key} onPress={() => go(object)} style={styles.iconEntry} testID={`home.object.${object.key}`}>
+            <Pressable accessibilityHint={object.hint} accessibilityLabel={`自习室-${object.label}`} accessibilityRole="button" key={object.key} onPress={() => go(object)} style={styles.iconEntry} testID={`home.object.${object.key}`}>
               <SideEntryArt artKey={artKey} badge={badge} entryKey={object.key} label={object.label} />
             </Pressable>
           )
