@@ -58,7 +58,7 @@ describe('mobile quick-memory due review contract', () => {
     assert.match(learnerApiSource, /export async function syncSmartStats/)
     assert.match(smartHookSource, /loadLearnerProfile\(\)/)
     assert.match(smartHookSource, /loadLearningStats\(\)/)
-    assert.match(smartHookSource, /chooseSmartPracticeDimension/)
+    assert.match(smartHookSource, /selectSmartPracticeDimension/)
     assert.match(smartHookSource, /recordSmartPracticeResult/)
     assert.match(smartHookSource, /mode: 'smart'/)
     assert.match(practiceSource, /resolveSmartPracticeMode\(smartDimension\)/)

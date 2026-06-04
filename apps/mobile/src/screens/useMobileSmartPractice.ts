@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  chooseSmartPracticeDimension,
   recordSmartPracticeResult,
+  selectSmartPracticeDimension,
   wordKey,
   type LearningStatsPayload,
   type MobileWord,
@@ -34,7 +34,7 @@ export function useMobileSmartPractice() {
   }, [refreshSmartPracticeContext])
 
   const chooseSmartDimension = useCallback(
-    (word: MobileWord) => chooseSmartPracticeDimension(word, smartStats, smartContext),
+    (word: MobileWord) => selectSmartPracticeDimension({ word, stats: smartStats, context: smartContext }).dimension,
     [smartContext, smartStats],
   )
 

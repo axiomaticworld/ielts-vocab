@@ -1,22 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { CheckCircle2, ChevronRight, Mic, XCircle } from 'lucide-react-native'
-import {
-  PRACTICE_MODE_LABELS,
-  SMART_PRACTICE_DIMENSION_LABELS,
-  buildPracticeOptions,
-  buildProgressSnapshot,
-  buildQuickMemorySyncRecord,
-  buildWrongWordRecord,
-  evaluatePracticeAnswer,
-  resolvePracticeQueueSource,
-  resolveSmartPracticeMode,
-  type MobileBook,
-  type MobileChapter,
-  type MobileWord,
-  type PracticeMode,
-  type PracticeQueueSource,
-} from '@ielts-vocab/app-core'
+import { PRACTICE_MODE_LABELS, SMART_PRACTICE_DIMENSION_LABELS, buildPracticeOptions, buildProgressSnapshot, buildQuickMemorySyncRecord, buildWrongWordRecord, evaluatePracticeAnswer, resolvePracticeQueueSource, resolveSmartPracticeMode, type MobileBook, type MobileChapter, type MobileWord, type PracticeMode, type PracticeQueueSource } from '@ielts-vocab/app-core'
 import { loadBooks, loadChapterWords, loadChapters, loadQuickMemoryReviewQueue, loadWrongWords, logPracticeSession, savePracticeProgress, syncQuickMemory, syncWrongWord } from '../api/learnerApi'
 import { Card, Field, Heading, Meta, Pill, PrimaryButton, Row, ScreenScroll, StatusText } from '../components/primitives'
 import { StickerLayer, practiceSheetStickerSlots } from '../components/stickers'
