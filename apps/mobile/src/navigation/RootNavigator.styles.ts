@@ -59,11 +59,11 @@ export const styles = StyleSheet.create({
   },
   tabBar: {
     alignItems: 'center',
-    backgroundColor: '#F8C2A8',
-    borderColor: '#E99A7A',
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
-    borderTopWidth: 1,
+    borderTopWidth: 0,
     flexDirection: 'row',
     gap: theme.spacing.xs,
     height: 58,
@@ -72,9 +72,9 @@ export const styles = StyleSheet.create({
     paddingTop: 0,
     shadowColor: theme.colors.shadow,
     shadowOffset: { height: -4, width: 0 },
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
     zIndex: 40,
   },
   tabButton: {
@@ -106,7 +106,7 @@ export const styles = StyleSheet.create({
     width: 58,
   },
   tabIconBoxSelected: {
-    backgroundColor: 'rgba(255, 253, 240, 0.45)',
+    backgroundColor: 'transparent',
     borderRadius: theme.radius.pill,
   },
   tabDrawnIcon: {
@@ -119,17 +119,17 @@ export const styles = StyleSheet.create({
   },
   practiceCenterSurface: {
     alignItems: 'center',
-    backgroundColor: '#FFFDF0',
-    borderColor: '#4A3B32',
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
     borderRadius: 29,
-    borderWidth: 1,
-    elevation: 7,
+    borderWidth: 0,
+    elevation: 0,
     height: 58,
     justifyContent: 'center',
     shadowColor: theme.colors.shadow,
     shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.14,
-    shadowRadius: 8,
+    shadowOpacity: 0,
+    shadowRadius: 0,
     width: 58,
   },
   tabHeader: {
@@ -143,21 +143,6 @@ export const styles = StyleSheet.create({
   tabHeaderTitle: {
     color: theme.colors.text,
     fontSize: 20,
-    fontWeight: '800',
-  },
-  tabLabel: {
-    alignSelf: 'stretch',
-    color: theme.colors.muted,
-    fontSize: 11,
-    fontWeight: '700',
-    lineHeight: 16,
-    textAlign: 'center',
-  },
-  tabLabelPrimary: {
-    color: theme.colors.accentDark,
-  },
-  tabLabelActive: {
-    color: '#D8662B',
     fontWeight: '800',
   },
 })

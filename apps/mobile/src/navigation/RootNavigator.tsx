@@ -333,11 +333,6 @@ function MainTabs() {
                 testID={`tab.${item.key}`}
               >
                 <TabIcon Icon={item.Icon} primary={primary} screen={item.key} selected={active} />
-                {primary ? null : (
-                  <Text style={[styles.tabLabel, active ? styles.tabLabelActive : null]}>
-                    {item.label}
-                  </Text>
-                )}
               </Pressable>
             )
           })}
