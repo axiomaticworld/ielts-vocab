@@ -211,6 +211,18 @@ describe('mobile Maestro E2E contract', () => {
     assert.equal(existsSync(join(workspaceRoot, 'apps/mobile/src/assets/stickers/tab-practice-edit-loop.png')), true)
     assert.equal(existsSync(join(workspaceRoot, 'apps/mobile/src/assets/stickers/practice-hero-tutor.png')), true)
     assert.equal(existsSync(join(workspaceRoot, 'apps/mobile/src/assets/stickers/practice-stat-ribbon.png')), true)
+    for (const iconFile of [
+      'practice-mode-test.png',
+      'practice-mode-listening.png',
+      'practice-mode-follow.png',
+      'practice-mode-quickmemory.png',
+      'practice-mode-dictation.png',
+      'practice-mode-meaning.png',
+      'practice-mode-smart.png',
+      'practice-mode-radio.png',
+    ]) {
+      assert.equal(existsSync(join(workspaceRoot, 'apps/mobile/src/assets/stickers', iconFile)), true)
+    }
     assert.match(navigatorSource, /const rootTabKeys: ScreenKey\[\] = \['home', 'books', 'stats', 'profile'\]/)
     assert.match(navigatorSource, /practice: require\('\.\.\/assets\/stickers\/tab-practice-edit-loop\.png'\)/)
     assert.match(practiceActionMenuSource, /practiceHeroTutor = require\('\.\.\/assets\/stickers\/practice-hero-tutor\.png'\)/)
@@ -277,6 +289,14 @@ describe('mobile Maestro E2E contract', () => {
     assert.match(practiceActionMenuSource, /triangleNode\('smart', 1, -1\)/)
     assert.match(practiceActionMenuSource, /triangleNode\('radio', 1, 1\)/)
     assert.equal(practiceActionMenuSource.includes("triangleNode('errors'"), false)
+    assert.match(practiceActionMenuSource, /test: 'practiceModeTest'/)
+    assert.match(practiceActionMenuSource, /listening: 'practiceModeListening'/)
+    assert.match(practiceActionMenuSource, /follow: 'practiceModeFollow'/)
+    assert.match(practiceActionMenuSource, /quickmemory: 'practiceModeQuickMemory'/)
+    assert.match(practiceActionMenuSource, /dictation: 'practiceModeDictation'/)
+    assert.match(practiceActionMenuSource, /meaning: 'practiceModeMeaning'/)
+    assert.match(practiceActionMenuSource, /smart: 'practiceModeSmart'/)
+    assert.match(practiceActionMenuSource, /radio: 'practiceModeRadio'/)
     assert.match(practiceActionMenuSource, /const LEFT_TO_RIGHT_REVEAL_ORDER = new Map\(/)
     assert.match(practiceActionMenuSource, /\.sort\(\(left, right\) => \(left\.translateX === right\.translateX \? left\.bottom - right\.bottom : left\.translateX - right\.translateX\)\)/)
     assert.match(practiceActionMenuSource, /const start = order \* 0\.09/)

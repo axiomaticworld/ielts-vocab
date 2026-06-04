@@ -21,6 +21,14 @@ export type StickerKey =
   | 'leafSprig'
   | 'lemonCorner'
   | 'micBubble'
+  | 'practiceModeDictation'
+  | 'practiceModeFollow'
+  | 'practiceModeListening'
+  | 'practiceModeMeaning'
+  | 'practiceModeQuickMemory'
+  | 'practiceModeRadio'
+  | 'practiceModeSmart'
+  | 'practiceModeTest'
   | 'recordingMic'
   | 'reviewClock'
   | 'scrollNote'
@@ -88,6 +96,14 @@ export const stickerCatalog: Record<StickerKey, StickerMeta> = {
   leafSprig: { fileName: 'leaf-sprig.png', height: 210, role: 'plant', width: 240 },
   lemonCorner: { fileName: 'lemon-corner.png', height: 210, role: 'object', width: 240 },
   micBubble: { fileName: 'mic-bubble.png', height: 300, role: 'object', width: 300 },
+  practiceModeDictation: { fileName: 'practice-mode-dictation.png', height: 360, role: 'object', width: 360 },
+  practiceModeFollow: { fileName: 'practice-mode-follow.png', height: 360, role: 'object', width: 360 },
+  practiceModeListening: { fileName: 'practice-mode-listening.png', height: 360, role: 'object', width: 360 },
+  practiceModeMeaning: { fileName: 'practice-mode-meaning.png', height: 360, role: 'object', width: 360 },
+  practiceModeQuickMemory: { fileName: 'practice-mode-quickmemory.png', height: 360, role: 'object', width: 360 },
+  practiceModeRadio: { fileName: 'practice-mode-radio.png', height: 360, role: 'object', width: 360 },
+  practiceModeSmart: { fileName: 'practice-mode-smart.png', height: 360, role: 'object', width: 360 },
+  practiceModeTest: { fileName: 'practice-mode-test.png', height: 360, role: 'object', width: 360 },
   recordingMic: { fileName: 'recording-mic.png', height: 360, role: 'object', width: 360 },
   reviewClock: { fileName: 'review-clock.png', height: 300, role: 'object', width: 300 },
   scrollNote: { fileName: 'scroll-note.png', height: 240, role: 'object', width: 300 },

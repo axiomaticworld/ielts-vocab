@@ -26,15 +26,15 @@ const quickActionLabels: Record<PracticeMode, string> = {
   test: '测试',
 }
 const modeStickerKeys: Record<PracticeMode, StickerKey> = {
-  dictation: 'scrollNote',
+  dictation: 'practiceModeDictation',
   errors: 'wrongWordSticky',
-  follow: 'recordingMic',
-  listening: 'headset',
-  meaning: 'vocabCardStack',
-  quickmemory: 'reviewClock',
-  radio: 'micBubble',
-  smart: 'studyBadgePractice',
-  test: 'tapePin',
+  follow: 'practiceModeFollow',
+  listening: 'practiceModeListening',
+  meaning: 'practiceModeMeaning',
+  quickmemory: 'practiceModeQuickMemory',
+  radio: 'practiceModeRadio',
+  smart: 'practiceModeSmart',
+  test: 'practiceModeTest',
 }
 const practiceHeroTutor = require('../assets/stickers/practice-hero-tutor.png')
 const practiceStatRibbon = require('../assets/stickers/practice-stat-ribbon.png')
