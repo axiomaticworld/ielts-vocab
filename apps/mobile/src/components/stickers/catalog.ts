@@ -43,6 +43,10 @@ export type StickerKey =
   | 'tapePin'
   | 'treasureBox'
   | 'treasureChest'
+  | 'uiCardFrameLarge'
+  | 'uiCardFrameSmall'
+  | 'uiSectionTitlePlaque'
+  | 'uiScreenPaperBg'
   | 'vocabCardStack'
   | 'wrongWordSticky'
   | 'wrongWordKit'
@@ -65,7 +69,7 @@ export type StickerSlot = {
 export type StickerMeta = {
   fileName: string
   height: number
-  role: 'character' | 'empty' | 'object' | 'plant'
+  role: 'background' | 'character' | 'empty' | 'object' | 'plant'
   width: number
 }
 
@@ -118,6 +122,10 @@ export const stickerCatalog: Record<StickerKey, StickerMeta> = {
   tapePin: { fileName: 'tape-pin.png', height: 360, role: 'object', width: 360 },
   treasureBox: { fileName: 'treasure-box.png', height: 300, role: 'object', width: 300 },
   treasureChest: { fileName: 'treasure-chest.png', height: 360, role: 'object', width: 360 },
+  uiCardFrameLarge: { fileName: 'ui-card-frame-large.png', height: 1920, role: 'object', width: 1080 },
+  uiCardFrameSmall: { fileName: 'ui-card-frame-small.png', height: 284, role: 'object', width: 900 },
+  uiSectionTitlePlaque: { fileName: 'ui-section-title-plaque.png', height: 284, role: 'object', width: 900 },
+  uiScreenPaperBg: { fileName: 'ui-screen-paper-bg.png', height: 2732, role: 'background', width: 1536 },
   vocabCardStack: { fileName: 'vocab-card-stack.png', height: 360, role: 'object', width: 360 },
   wrongWordSticky: { fileName: 'wrong-word-sticky.png', height: 360, role: 'object', width: 360 },
   wrongWordKit: { fileName: 'wrong-word-kit.png', height: 300, role: 'object', width: 300 },

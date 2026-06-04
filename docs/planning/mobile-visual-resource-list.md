@@ -15,6 +15,15 @@ Last updated: 2026-06-04
 
 ## P0 Resource List
 
+### Generated And Accepted
+
+| Resource | Status | Notes |
+| --- | --- | --- |
+| `ui-screen-paper-bg.png` | accepted | 1536x2732 full-screen paper background; no text, no UI chrome |
+| `ui-section-title-plaque.png` | accepted | 900x284 transparent title plaque; clean alpha after tightened crop |
+| `ui-card-frame-large.png` | accepted | 1080x1920 paper panel for large content surfaces |
+| `ui-card-frame-small.png` | accepted | 900x284 transparent-backed small card surface for rows and shortcuts |
+
 ### Global UI Skin
 
 | Resource | Usage | Notes |
