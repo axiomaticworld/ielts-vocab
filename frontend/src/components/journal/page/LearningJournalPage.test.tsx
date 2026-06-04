@@ -190,8 +190,11 @@ describe('LearningJournalPage diary view', () => {
     await user.click(await screen.findByRole('tab', { name: '历史笔记' }))
 
     await screen.findByText('2026-06-02')
-    expect(container.querySelector('#journal-start-date')).not.toBeNull()
-    expect(container.querySelector('#journal-end-date')).not.toBeNull()
+    expect(container.querySelector('.journal-date-range-field')).not.toBeNull()
+    expect(container.querySelector('#journal-start-date')).toHaveAttribute('type', 'text')
+    expect(container.querySelector('#journal-start-date')).toHaveAttribute('placeholder', 'YYYY/MM/DD')
+    expect(container.querySelector('#journal-end-date')).toHaveAttribute('type', 'text')
+    expect(container.querySelector('#journal-end-date')).toHaveAttribute('placeholder', 'YYYY/MM/DD')
     expect(container.querySelector('.journal-history-card__preview')?.textContent).toContain('listening practice')
   })
 

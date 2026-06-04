@@ -2,6 +2,30 @@ import refreshIcon from '../../../assets/icons/refresh.svg'
 import { today } from '../../../composables/journal/page/journalPageUtils'
 import { MicroLoading } from '../../ui'
 
+const CALENDAR_ICON = (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="3" y="5" width="18" height="16" rx="2" />
+    <path d="M16 3v4M8 3v4M3 10h18" />
+  </svg>
+)
+
+const DATE_DISPLAY_PLACEHOLDER = 'YYYY/MM/DD'
+const DATE_INPUT_PATTERN = /^([0-9]{4})[/-]([0-9]{2})[/-]([0-9]{2})$/
+
+function formatDateForInput(value: string): string {
+  return value.replaceAll('-', '/')
+}
+
+function normalizeDateInput(value: string, max?: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+
+  const match = DATE_INPUT_PATTERN.exec(trimmed)
+  const normalized = match ? `${match[1]}-${match[2]}-${match[3]}` : trimmed.replaceAll('/', '-')
+  if (max && DATE_INPUT_PATTERN.test(normalized) && normalized > max) return max
+  return normalized
+}
+
 /* ── Today Notes Actions (edit toggle + AI polish) ── */
 
 interface TodayNotesActionsProps {
@@ -87,27 +111,38 @@ export function JournalNotesActions({
 }: NotesActionsProps) {
   return (
     <div className="journal-filter-bar">
-      <div className="journal-filter-group">
-        <label className="journal-filter-label" htmlFor="journal-start-date">开始日期</label>
-        <input
-          id="journal-start-date"
-          type="date"
-          className="journal-date-input"
-          value={startDate}
-          max={endDate || today()}
-          onChange={event => onStartDateChange(event.target.value)}
-        />
-      </div>
-      <div className="journal-filter-group">
-        <label className="journal-filter-label" htmlFor="journal-end-date">结束日期</label>
-        <input
-          id="journal-end-date"
-          type="date"
-          className="journal-date-input"
-          value={endDate}
-          max={today()}
-          onChange={event => onEndDateChange(event.target.value)}
-        />
+      <div className="journal-date-range-field" aria-label="日记日期范围筛选">
+        <div className="journal-filter-group journal-date-range-segment">
+          <label className="journal-filter-label" htmlFor="journal-start-date">开始日期</label>
+          <span className="journal-date-icon">{CALENDAR_ICON}</span>
+          <input
+            id="journal-start-date"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder={DATE_DISPLAY_PLACEHOLDER}
+            className="journal-date-input"
+            value={formatDateForInput(startDate)}
+            onChange={event => onStartDateChange(normalizeDateInput(event.target.value, endDate || today()))}
+          />
+        </div>
+
+        <span className="journal-date-range-separator" aria-hidden="true">—</span>
+
+        <div className="journal-filter-group journal-date-range-segment">
+          <label className="journal-filter-label" htmlFor="journal-end-date">结束日期</label>
+          <span className="journal-date-icon">{CALENDAR_ICON}</span>
+          <input
+            id="journal-end-date"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder={DATE_DISPLAY_PLACEHOLDER}
+            className="journal-date-input"
+            value={formatDateForInput(endDate)}
+            onChange={event => onEndDateChange(normalizeDateInput(event.target.value, today()))}
+          />
+        </div>
       </div>
       <button
         className="journal-filter-reset"
