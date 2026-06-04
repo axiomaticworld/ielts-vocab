@@ -11,12 +11,14 @@ import {
   buildQuickMemorySyncRecord,
   buildWrongWordRecord,
   chooseSmartPracticeDimension,
+  evaluateSmartPracticeAttempt,
   evaluatePracticeAnswer,
   filterMobileWrongWords,
   isErrorReviewProgressForQueue,
   normalizeSmartStatsPayload,
   recordSmartPracticeResult,
   resolvePracticeQueueSource,
+  selectSmartPracticeDimension,
   stripHtml,
   updateErrorReviewRoundResults,
   type MobileWord,
@@ -74,6 +76,34 @@ describe('mobile practice engine', () => {
     assert.equal(dimension, 'listening')
     assert.equal(evaluatePracticeAnswer(word, 'smart', word.definition, { smartDimension: dimension }).correct, true)
     assert.equal(evaluatePracticeAnswer(word, 'smart', word.word, { smartDimension: dimension }).correct, false)
+  })
+
+  it('prefers learner-profile weakest summary before raw dimension order', () => {
+    const selection = selectSmartPracticeDimension({
+      word,
+      stats: {},
+      context: {
+        learnerProfile: {
+          summary: { weakest_mode: 'listening' },
+          dimensions: [{ dimension: 'meaning', accuracy: 20 }],
+        },
+      },
+    })
+
+    assert.deepEqual(selection, { dimension: 'listening', mode: 'listening' })
+  })
+
+  it('evaluates smart attempts against the selected dimension', () => {
+    const attempt = evaluateSmartPracticeAttempt({
+      word,
+      answer: word.definition,
+      stats: {},
+      context: { learningStats: { alltime: { weakest_mode: 'listening' } } },
+    })
+
+    assert.equal(attempt.dimension, 'listening')
+    assert.equal(attempt.mode, 'listening')
+    assert.equal(attempt.result.correct, true)
   })
 
   it('selects weak smart dimensions from per-word stats before generic spelling', () => {
