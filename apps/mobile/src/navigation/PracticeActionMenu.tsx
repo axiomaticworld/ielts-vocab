@@ -167,6 +167,7 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
     inputRange: [0.12, 0.42],
     outputRange: [8, 0],
   })
+  const displayedTodayMasteredWords = Math.max(0, Math.round(todayMasteredWords))
 
   return (
     <View style={styles.overlay} testID="practice.quickAction.fullscreen">
@@ -187,8 +188,8 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
         <View style={styles.heroScene}>
           <ImageBackground resizeMode="contain" source={practiceStatRibbon} style={styles.heroRibbon}>
             <View style={styles.ribbonTextWrap}>
-              <Text style={styles.ribbonText}>
-                今天已掌握 <Text style={styles.ribbonNumber}>{Math.max(0, Math.round(todayMasteredWords))}</Text> 词啦~
+              <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={styles.ribbonText}>
+                今日掌握<Text style={styles.ribbonNumber}>{displayedTodayMasteredWords}</Text>词
               </Text>
             </View>
           </ImageBackground>
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
   },
   ribbonNumber: {
     color: '#C3551C',
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '900',
   },
   ribbonText: {
@@ -372,14 +373,14 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     lineHeight: 38,
     textAlign: 'center',
+    width: '100%',
   },
   ribbonTextWrap: {
     alignItems: 'center',
     height: 58,
     justifyContent: 'center',
-    paddingHorizontal: 76,
     paddingTop: 2,
-    width: '100%',
+    width: 230,
   },
   heroRibbon: {
     alignItems: 'center',
