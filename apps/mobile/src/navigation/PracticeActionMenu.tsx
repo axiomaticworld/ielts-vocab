@@ -380,7 +380,8 @@ const styles = StyleSheet.create({
   ribbonNumberSlot: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 104,
+    marginHorizontal: 10,
+    width: 94,
   },
   ribbonText: {
     color: '#6E4934',
@@ -394,11 +395,9 @@ const styles = StyleSheet.create({
   },
   ribbonTextPrefix: {
     textAlign: 'right',
-    width: 96,
   },
   ribbonTextSuffix: {
     textAlign: 'left',
-    width: 96,
   },
   ribbonTextWrap: {
     alignItems: 'center',
