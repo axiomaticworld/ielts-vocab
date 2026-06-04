@@ -4,13 +4,16 @@
 
 .journal-doc-shell--history {
   grid-template-columns: minmax(0, 1fr);
+  align-content: start;
   padding: var(--size-16);
+  overflow-y: auto;
 }
 
 .journal-history-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--size-12);
+  align-items: start;
   padding-bottom: var(--size-16);
 }
 
@@ -24,6 +27,7 @@
   background: var(--surface-base);
   text-align: left;
   cursor: pointer;
+  align-self: start;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 
   &:hover {

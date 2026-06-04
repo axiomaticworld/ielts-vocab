@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -50,6 +52,11 @@ const todayEntry = {
   created_at: '2026-06-03T04:00:00',
   updated_at: '2026-06-03T04:31:00',
 }
+
+const journalHistoryStyles = readFileSync(
+  resolve(process.cwd(), 'src/styles/pages/journal/_journal-history.scss'),
+  'utf-8',
+)
 
 describe('LearningJournalPage diary view', () => {
   beforeEach(() => {
@@ -231,6 +238,12 @@ describe('LearningJournalPage diary view', () => {
     const detailImages = container.querySelectorAll('.journal-history-detail-images img')
     expect(detailImages).toHaveLength(2)
     expect(detailImages[1]).toHaveAttribute('src', 'data:image/png;base64,history2')
+  })
+
+  it('keeps history cards compact instead of stretching a single row', () => {
+    expect(journalHistoryStyles).toMatch(/\.journal-doc-shell--history\s*\{[^}]*align-content:\s*start;/s)
+    expect(journalHistoryStyles).toMatch(/\.journal-history-grid\s*\{[^}]*align-items:\s*start;/s)
+    expect(journalHistoryStyles).toMatch(/\.journal-history-card\s*\{[^}]*align-self:\s*start;/s)
   })
 
   it('saves edited recap content and can request polish', async () => {
