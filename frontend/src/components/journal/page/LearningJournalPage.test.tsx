@@ -201,6 +201,8 @@ describe('LearningJournalPage diary view', () => {
     await user.click(await screen.findByRole('tab', { name: '历史笔记' }))
 
     await screen.findByText('2026-06-02')
+    expect(screen.getByText('更新 04:31')).toBeInTheDocument()
+    expect(screen.queryByText('2026-06-03 04:31')).not.toBeInTheDocument()
     expect(container.querySelector('.journal-date-range-field')).not.toBeNull()
     expect(container.querySelector('#journal-start-date')).toHaveAttribute('type', 'text')
     expect(container.querySelector('#journal-start-date')).toHaveAttribute('placeholder', '开始日期')

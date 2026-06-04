@@ -28,6 +28,10 @@ function stripMarkdown(content: string, maxLen = 80): string {
   return text.length > maxLen ? text.slice(0, maxLen) + '...' : text
 }
 
+function formatCardUpdateTime(formatDateTime: (iso: string) => string, iso: string): string {
+  return formatDateTime(iso).replace(/^\d{4}-\d{2}-\d{2}\s*/, '')
+}
+
 function HistoryImageThumbs({ images }: { images: string[] }) {
   if (images.length === 0) return null
 
@@ -134,7 +138,7 @@ export default function HistoryNotesDocument({
                   {preview && <p className="journal-history-card__preview">{preview}</p>}
                   <HistoryImageThumbs images={images} />
                   <span className="journal-history-card__time">
-                    {formatDateTime(entry.updated_at)}
+                    更新 {formatCardUpdateTime(formatDateTime, entry.updated_at)}
                   </span>
                 </button>
               )
