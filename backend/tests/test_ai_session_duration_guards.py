@@ -49,7 +49,7 @@ def test_log_session_caps_to_recent_server_activity_when_client_cap_missing(clie
     base_now_utc = datetime.now(timezone.utc).replace(microsecond=0)
     recovered_start_utc = base_now_utc - timedelta(hours=6, minutes=54, seconds=2)
     last_activity_utc = recovered_start_utc + timedelta(seconds=56)
-    expected_duration_seconds = 5 * 60 + 56
+    expected_duration_seconds = 2 * 60 + 56
 
     start_res = client.post('/api/ai/start-session', json={
         'mode': 'listening',
@@ -93,7 +93,7 @@ def test_log_session_caps_to_recent_server_activity_when_client_cap_missing(clie
         session = UserStudySession.query.get(session_id)
         assert session is not None
         assert session.duration_seconds == expected_duration_seconds
-        assert session.ended_at == (last_activity_utc + timedelta(minutes=5)).replace(tzinfo=None)
+        assert session.ended_at == (last_activity_utc + timedelta(minutes=2)).replace(tzinfo=None)
 
 
 def test_learning_core_log_session_caps_to_recent_server_activity(client, app):
@@ -102,7 +102,7 @@ def test_learning_core_log_session_caps_to_recent_server_activity(client, app):
     base_now_utc = datetime.now(timezone.utc).replace(microsecond=0)
     recovered_start_utc = base_now_utc - timedelta(hours=6, minutes=54, seconds=2)
     last_activity_utc = recovered_start_utc + timedelta(seconds=56)
-    expected_duration_seconds = 5 * 60 + 56
+    expected_duration_seconds = 2 * 60 + 56
 
     start_res = client.post('/api/ai/start-session', json={
         'mode': 'listening',
@@ -147,7 +147,7 @@ def test_learning_core_log_session_caps_to_recent_server_activity(client, app):
         session = UserStudySession.query.get(session_id)
         assert session is not None
         assert session.duration_seconds == expected_duration_seconds
-        assert session.ended_at == (last_activity_utc + timedelta(minutes=5)).replace(tzinfo=None)
+        assert session.ended_at == (last_activity_utc + timedelta(minutes=2)).replace(tzinfo=None)
 
 
 def test_learning_stats_caps_live_pending_duration_by_recent_activity(client, app):
@@ -156,7 +156,7 @@ def test_learning_stats_caps_live_pending_duration_by_recent_activity(client, ap
     base_now_utc = datetime.now(timezone.utc).replace(microsecond=0)
     recovered_start_utc = base_now_utc - timedelta(hours=2)
     last_activity_utc = recovered_start_utc + timedelta(seconds=42)
-    expected_duration_seconds = 5 * 60 + 42
+    expected_duration_seconds = 2 * 60 + 42
 
     start_res = client.post('/api/ai/start-session', json={
         'mode': 'listening',

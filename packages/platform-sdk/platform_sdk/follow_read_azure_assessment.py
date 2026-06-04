@@ -6,6 +6,7 @@ import os
 import subprocess
 import tempfile
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from pathlib import Path
 
@@ -53,6 +54,10 @@ def _has_azure_speech_credentials() -> bool:
     return bool((os.environ.get('AZURE_SPEECH_KEY') or '').strip() and (os.environ.get('AZURE_SPEECH_REGION') or '').strip())
 
 
+def has_azure_follow_read_credentials() -> bool:
+    return _has_azure_speech_credentials()
+
+
 def _pilot_path() -> Path:
     configured = (os.environ.get('FOLLOW_READ_AZURE_PILOT_WORDS_PATH') or '').strip()
     return Path(configured).resolve() if configured else _DEFAULT_PILOT_PATH
@@ -80,6 +85,19 @@ def is_azure_follow_read_pilot_word(word: str) -> bool:
     if not enabled:
         return False
     return str(word or '').strip().lower() in _load_pilot_words(str(_pilot_path()))
+
+
+def has_azure_follow_read_segment_phonetics(segments: list[dict] | None) -> bool:
+    specs = [
+        str(segment.get('phonetic') or '').strip()
+        for segment in (segments or [])
+        if isinstance(segment, dict) and str(segment.get('text') or segment.get('letters') or '').strip()
+    ]
+    return bool(specs) and all(split_ipa_phonemes(spec) for spec in specs)
+
+
+def should_use_azure_follow_read_assessment(_word: str, segments: list[dict] | None) -> bool:
+    return has_azure_follow_read_credentials() and has_azure_follow_read_segment_phonetics(segments)
 
 
 def split_ipa_phonemes(value: str | None) -> list[str]:
@@ -364,8 +382,11 @@ def _build_assessment(*, word: str, segments: list[dict], gb_payload: dict, us_p
 def run_azure_follow_read_assessment(*, audio_path: str, word: str, segments: list[dict]) -> tuple[dict, str]:
     wav_path = _write_pcm_wav(audio_path)
     try:
-        gb_payload = _request_assessment(wav_path, word=word, locale='en-GB')
-        us_payload = _request_assessment(wav_path, word=word, locale='en-US')
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            gb_future = executor.submit(_request_assessment, wav_path, word=word, locale='en-GB')
+            us_future = executor.submit(_request_assessment, wav_path, word=word, locale='en-US')
+            gb_payload = gb_future.result()
+            us_payload = us_future.result()
         result = _build_assessment(word=word, segments=segments, gb_payload=gb_payload, us_payload=us_payload)
         return result, result['model']
     finally:

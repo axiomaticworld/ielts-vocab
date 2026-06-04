@@ -2,6 +2,7 @@ import {
   ExamPaperDetailSchema,
   ExamPaperSummarySchema,
   HomeTodoPayloadSchema,
+  JournalEntrySchema,
   JournalSummarySchema,
   LearningNoteSchema,
   LearningStatsPayloadSchema,
@@ -15,6 +16,7 @@ import {
   type ExamPaperDetail,
   type ExamPaperSummary,
   type HomeTodoPayload,
+  type JournalEntry,
   type JournalSummary,
   type LearningNote,
   type LearningStatsPayload,
@@ -359,6 +361,19 @@ export async function submitExamAttempt(attemptId: number) {
 export async function loadJournalSummaries(): Promise<JournalSummary[]> {
   const payload = await mobileApiClient.json<{ summaries?: unknown[]; items?: unknown[] }>('/api/notes/summaries')
   return parseArray(JournalSummarySchema, payload.summaries ?? payload.items)
+}
+
+export async function loadTodayJournalEntry(): Promise<JournalEntry | null> {
+  const payload = await mobileApiClient.json<{ entry?: unknown }>('/api/notes/journal/today')
+  return payload.entry ? JournalEntrySchema.parse(payload.entry) : null
+}
+
+export async function saveTodayJournalEntry(content: string): Promise<JournalEntry> {
+  const payload = await mobileApiClient.json<{ entry?: unknown }>('/api/notes/journal', {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
+  return JournalEntrySchema.parse(payload.entry)
 }
 
 export async function loadLearningNotes(): Promise<LearningNote[]> {

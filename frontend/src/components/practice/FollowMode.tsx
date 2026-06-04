@@ -171,6 +171,7 @@ export default function FollowMode({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [scoring, setScoring] = useState(false)
+  const [slowScoring, setSlowScoring] = useState(false)
   const [scoreResult, setScoreResult] = useState<FollowReadPronunciationResponse | null>(null)
   const [scoreSummaryOverride, setScoreSummaryOverride] = useState('')
   const [snapshot, setSnapshot] = useState(getPracticeAudioSnapshot())
@@ -247,7 +248,9 @@ export default function FollowMode({
 
   const submitRecordedAudio = useCallback(async (audio: Blob, durationSeconds: number) => {
     setScoring(true)
+    setSlowScoring(false)
     setError(null)
+    const slowTimer = window.setTimeout(() => setSlowScoring(true), 4000)
     try {
       const submittedSegments = payload?.segments || []
       const result = await evaluateFollowReadPronunciation({
@@ -286,7 +289,9 @@ export default function FollowMode({
         : '跟读评分失败，请稍后重试'
       setError(message)
     } finally {
+      window.clearTimeout(slowTimer)
       setScoring(false)
+      setSlowScoring(false)
     }
   }, [
     bookId,
@@ -448,7 +453,11 @@ export default function FollowMode({
               <canvas ref={attachCanvas} />
             </div>
           )}
-          {scoring && <div className="follow-recording-note">评分中...</div>}
+          {scoring && (
+            <div className="follow-recording-note">
+              正在评分，通常几秒内完成。{slowScoring ? '评分仍在进行，录音已提交，请稍等。' : ''}
+            </div>
+          )}
           {scoreResult && (
             <FollowReadScoreDetails result={scoreResult} label={scoreLabel} summary={scoreSummary} />
           )}

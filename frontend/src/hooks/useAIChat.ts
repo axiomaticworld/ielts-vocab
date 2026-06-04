@@ -16,6 +16,7 @@ export {
   logSession,
   markStudySessionRecoveryHandled,
   prepareStudySessionForLearningAction,
+  recordStudySessionUserActivity,
   recordModeAnswer,
   resolveStudySessionDurationSeconds,
   startSession,

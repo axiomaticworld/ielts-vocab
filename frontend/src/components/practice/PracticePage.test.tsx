@@ -9,12 +9,12 @@ vi.mock('../../hooks', async () => {
   const actual = await vi.importActual<any>('../../hooks')
   return {
     ...actual,
-    useSpeechRecognition: () => (useSpeechRecognition: () => ({
+    useSpeechRecognition: () => ({
     isConnected: true,
     isRecording: false,
     startRecording: vi.fn(),
     stopRecording: vi.fn(),
-  })),
+  }),
   }
 })
 

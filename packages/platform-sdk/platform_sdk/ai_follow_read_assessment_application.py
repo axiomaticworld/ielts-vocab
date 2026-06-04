@@ -24,8 +24,8 @@ from platform_sdk.follow_read_acoustic_fallback import (
 )
 from platform_sdk.follow_read_azure_assessment import (
     AzureFollowReadAssessmentError,
-    is_azure_follow_read_pilot_word,
     run_azure_follow_read_assessment,
+    should_use_azure_follow_read_assessment,
 )
 from platform_sdk.follow_read_explanation import (
     FollowReadExplanationError,
@@ -328,7 +328,7 @@ def _run_selected_follow_read_assessment(
     phonetic: str | None,
     segments: list | None = None,
 ) -> tuple[dict, str]:
-    if is_azure_follow_read_pilot_word(word):
+    if should_use_azure_follow_read_assessment(word, segments):
         try:
             return run_azure_follow_read_assessment(
                 audio_path=audio_path,

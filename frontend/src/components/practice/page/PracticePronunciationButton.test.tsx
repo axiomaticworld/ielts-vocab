@@ -17,7 +17,7 @@ vi.mock('../../../hooks', async () => {
   const actual = await vi.importActual<any>('../../../hooks')
   return {
     ...actual,
-    useSpeechRecognition: () => (useSpeechRecognition: (options: typeof speechOptions) => {
+    useSpeechRecognition: (options: typeof speechOptions) => {
     speechOptions = options
     return {
       isConnected: true,
@@ -26,7 +26,7 @@ vi.mock('../../../hooks', async () => {
       startRecording: startRecordingMock,
       stopRecording: stopRecordingMock,
     }
-  }),
+  },
   }
 })
 

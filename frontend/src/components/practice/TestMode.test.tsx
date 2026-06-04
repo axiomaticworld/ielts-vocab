@@ -40,7 +40,8 @@ vi.mock('../../hooks', async () => {
   const actual = await vi.importActual<any>('../../hooks')
   return {
     ...actual,
-    useAIChat: () => (PASSIVE_STUDY_SESSION_MIN_SECONDS: 30,
+    useAIChat: () => ({
+  PASSIVE_STUDY_SESSION_MIN_SECONDS: 30,
   prepareStudySessionForLearningAction: undefined,
   finalizeStudySessionSegment: undefined,
   resolveStudySessionDurationSeconds: () => 1,
@@ -49,7 +50,8 @@ vi.mock('../../hooks', async () => {
   cancelSession: (...args: unknown[]) => cancelSessionMock(...args),
   flushStudySessionOnPageHide: (...args: unknown[]) => flushStudySessionOnPageHideMock(...args),
   touchStudySessionActivity: (...args: unknown[]) => touchStudySessionActivityMock(...args),
-  updateStudySessionSnapshot: (...args: unknown[]) => updateStudySessionSnapshotMock(...args)),
+  updateStudySessionSnapshot: (...args: unknown[]) => updateStudySessionSnapshotMock(...args),
+}),
   }
 })
 

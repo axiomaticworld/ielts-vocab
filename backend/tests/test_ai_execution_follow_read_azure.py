@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 
 from fastapi.testclient import TestClient
 
@@ -20,10 +21,12 @@ def _enable_language_pilot(monkeypatch, tmp_path):
     pilot_path.write_text(json.dumps({'words': ['language']}), encoding='utf-8')
     monkeypatch.setenv('FOLLOW_READ_AZURE_PILOT_ENABLED', 'true')
     monkeypatch.setenv('FOLLOW_READ_AZURE_PILOT_WORDS_PATH', str(pilot_path))
+    monkeypatch.setenv('AZURE_SPEECH_KEY', 'test-azure-key')
+    monkeypatch.setenv('AZURE_SPEECH_REGION', 'eastus')
     follow_read_azure_assessment.reset_azure_follow_read_pilot_cache()
 
 
-def test_ai_execution_follow_read_uses_azure_for_pilot_words(monkeypatch, tmp_path):
+def test_ai_execution_follow_read_uses_azure_for_non_pilot_words_with_phonetics(monkeypatch, tmp_path):
     _configure_ai_env(monkeypatch, tmp_path)
     _enable_language_pilot(monkeypatch, tmp_path)
     module = _load_ai_execution_service_module('ai_execution_service_follow_read_azure')
@@ -32,14 +35,14 @@ def test_ai_execution_follow_read_uses_azure_for_pilot_words(monkeypatch, tmp_pa
     recorded: dict[str, dict] = {}
 
     def _fake_azure(**kwargs):
-        assert kwargs['word'] == 'language'
+        assert kwargs['word'] == 'attention'
         assert kwargs['segments'] == [
-            {'text': 'lan', 'phonetic': 'læŋ'},
-            {'text': 'guage', 'phonetic': 'gwɪdʒ'},
+            {'text': 'at', 'phonetic': 'ə'},
+            {'text': 'ten', 'phonetic': 'ten'},
         ]
         return ({
             'score': 86,
-            'transcript': 'language',
+            'transcript': 'attention',
             'feedback': {
                 'summary': '发音整体清晰，继续保持。',
                 'stress': '重音稳定。',
@@ -49,8 +52,8 @@ def test_ai_execution_follow_read_uses_azure_for_pilot_words(monkeypatch, tmp_pa
                 'rhythm': '韵律仅供参考。',
             },
             'segment_feedback': [
-                {'text': 'lan', 'phonetic': 'læŋ', 'score': 90, 'status': 'good', 'comment': 'lan 稳定。'},
-                {'text': 'guage', 'phonetic': 'gwɪdʒ', 'score': 82, 'status': 'ok', 'comment': 'guage 接近。'},
+                {'text': 'at', 'phonetic': 'ə', 'score': 90, 'status': 'good', 'comment': 'at 稳定。'},
+                {'text': 'ten', 'phonetic': 'ten', 'score': 82, 'status': 'ok', 'comment': 'ten 接近。'},
             ],
             'phoneme_feedback': [
                 {'expectedPhoneme': 'l', 'score': 92, 'status': 'good', 'candidatePhonemes': []},
@@ -82,9 +85,9 @@ def test_ai_execution_follow_read_uses_azure_for_pilot_words(monkeypatch, tmp_pa
     response = client.post(
         '/api/ai/follow-read/evaluate',
         data={
-            'word': 'language',
-            'phonetic': '/ˈlæŋɡwɪdʒ/',
-            'segments': '[{"text":"lan","phonetic":"læŋ"},{"text":"guage","phonetic":"gwɪdʒ"}]',
+            'word': 'attention',
+            'phonetic': '/əˈtenʃn/',
+            'segments': '[{"text":"at","phonetic":"ə"},{"text":"ten","phonetic":"ten"}]',
         },
         files={'audio': ('user.wav', _build_tone_wav(), 'audio/wav')},
         headers=_auth_headers(token),
@@ -143,6 +146,50 @@ def test_ai_execution_follow_read_azure_failure_does_not_record_attempt(monkeypa
     assert response.status_code == 503
     assert response.json() == {'error': '逐音素评分对齐失败，请重新跟读'}
     assert recorded == {'event': False, 'attempt': False}
+
+
+def test_azure_follow_read_requests_gb_and_us_concurrently(monkeypatch, tmp_path):
+    wav_path = tmp_path / 'sample.wav'
+    wav_path.write_bytes(b'RIFF')
+    started: list[str] = []
+    both_started = threading.Event()
+
+    def _payload(locale: str) -> dict:
+        return {
+            'RecognitionStatus': 'Success',
+            'NBest': [{
+                'Display': 'la',
+                'PronunciationAssessment': {'CompletenessScore': 90, 'FluencyScore': 80, 'ProsodyScore': 70},
+                'Words': [{
+                    'PronunciationAssessment': {},
+                    'Phonemes': [
+                        {'Phoneme': 'l', 'PronunciationAssessment': {'AccuracyScore': 90}},
+                        {'Phoneme': 'æ', 'PronunciationAssessment': {'AccuracyScore': 80}},
+                    ],
+                }],
+            }],
+        }
+
+    def _fake_request(_wav_path, *, word: str, locale: str):
+        assert word == 'la'
+        started.append(locale)
+        if len(started) == 2:
+            both_started.set()
+        assert both_started.wait(1), 'Azure locale requests should overlap'
+        return _payload(locale)
+
+    monkeypatch.setattr(follow_read_azure_assessment, '_write_pcm_wav', lambda _audio_path: str(wav_path))
+    monkeypatch.setattr(follow_read_azure_assessment, '_request_assessment', _fake_request)
+
+    result, model = follow_read_azure_assessment.run_azure_follow_read_assessment(
+        audio_path='input.webm',
+        word='la',
+        segments=[{'text': 'la', 'phonetic': 'l æ'}],
+    )
+
+    assert set(started) == {'en-GB', 'en-US'}
+    assert model == 'azure-rest:en-GB+en-US'
+    assert result['provider'] == 'azure-pronunciation-dual-locale'
 
 
 def test_ai_execution_follow_read_explain_route(monkeypatch, tmp_path):

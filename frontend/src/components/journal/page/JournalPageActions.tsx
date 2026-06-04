@@ -23,8 +23,8 @@ export function TodayNotesActions({
     <div className="journal-today-actions">
       <button
         className="journal-edit-toggle-btn"
-        title={editMode ? '退出编辑' : '编辑笔记'}
-        aria-label={editMode ? '退出编辑' : '编辑笔记'}
+        title={editMode ? '退出编辑' : '编辑今日复盘'}
+        aria-label={editMode ? '退出编辑' : '编辑今日复盘'}
         onClick={onToggleEdit}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">

@@ -26,7 +26,7 @@ export default function JournalWorkspace({
           value={activeTab}
           onChange={onTabChange}
           options={[
-            { value: 'today', label: '今日笔记' },
+            { value: 'today', label: '今日复盘' },
             { value: 'history', label: '历史笔记' },
           ]}
         />

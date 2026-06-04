@@ -90,7 +90,7 @@ export default function HistoryNotesDocument({
       ) : entries.length === 0 ? (
         <div className="journal-empty journal-empty--main">
           <p>暂无历史笔记。</p>
-          <p>在"今日笔记"中记录后，笔记会按日期出现在这里。</p>
+          <p>在"今日复盘"中记录后，笔记会按日期出现在这里。</p>
         </div>
       ) : (
         <>

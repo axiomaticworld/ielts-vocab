@@ -155,6 +155,16 @@ export const JournalSummarySchema = z.object({
 })
 export type JournalSummary = z.infer<typeof JournalSummarySchema>
 
+export const JournalEntrySchema = z.object({
+  id: IdSchema.optional(),
+  date: OptionalStringSchema,
+  content: OptionalStringSchema,
+  polished_content: OptionalStringSchema,
+  created_at: OptionalStringSchema,
+  updated_at: OptionalStringSchema,
+})
+export type JournalEntry = z.infer<typeof JournalEntrySchema>
+
 export const LearningNoteSchema = z.object({
   id: IdSchema.optional(),
   question: OptionalStringSchema,

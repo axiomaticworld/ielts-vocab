@@ -5,6 +5,7 @@ import LearningJournalPage from './LearningJournalPage'
 
 const apiFetchMock = vi.fn()
 const tiptapMockState = vi.hoisted(() => ({
+  config: null as { onUpdate?: (value: { editor: { getHTML: () => string } }) => void } | null,
   listeners: new Map<string, EventListener>(),
 }))
 
@@ -22,20 +23,23 @@ vi.mock('@tiptap/react', () => ({
       <div className="journal-editor-content" />
     </div>
   ),
-  useEditor: (config: { content?: string }) => ({
-    commands: { setContent: vi.fn() },
-    getHTML: () => config.content || '<p></p>',
-    view: {
-      dom: {
-        addEventListener: vi.fn((type: string, handler: EventListener) => {
-          tiptapMockState.listeners.set(type, handler)
-        }),
-        removeEventListener: vi.fn((type: string) => {
-          tiptapMockState.listeners.delete(type)
-        }),
+  useEditor: (config: { content?: string; onUpdate?: (value: { editor: { getHTML: () => string } }) => void }) => {
+    tiptapMockState.config = config
+    return ({
+      commands: { setContent: vi.fn() },
+      getHTML: () => config.content || '<p></p>',
+      view: {
+        dom: {
+          addEventListener: vi.fn((type: string, handler: EventListener) => {
+            tiptapMockState.listeners.set(type, handler)
+          }),
+          removeEventListener: vi.fn((type: string) => {
+            tiptapMockState.listeners.delete(type)
+          }),
+        },
       },
-    },
-  }),
+    })
+  },
 }))
 
 const todayEntry = {
@@ -50,6 +54,7 @@ const todayEntry = {
 describe('LearningJournalPage diary view', () => {
   beforeEach(() => {
     apiFetchMock.mockReset()
+    tiptapMockState.config = null
     tiptapMockState.listeners.clear()
     vi.spyOn(window, 'alert').mockImplementation(() => {})
   })
@@ -70,7 +75,7 @@ describe('LearningJournalPage diary view', () => {
     expect(container.querySelector('.page-skeleton--journal')).not.toBeNull()
     resolveToday?.({ entry: null })
 
-    await screen.findByRole('tab', { name: '今日笔记' })
+    await screen.findByRole('tab', { name: '今日复盘' })
   })
 
   it('renders the today diary entry and keeps the old summary tabs out', async () => {
@@ -83,13 +88,13 @@ describe('LearningJournalPage diary view', () => {
 
     const { container } = render(<LearningJournalPage />)
 
-    expect(await screen.findByRole('tab', { name: '今日笔记' })).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: '今日复盘' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: '历史笔记' })).toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: '每日总结' })).not.toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: '问答历史' })).not.toBeInTheDocument()
     expect(container.querySelector('.journal-doc-shell--today')).not.toBeNull()
     expect(container.querySelector('.journal-doc-body h1')?.textContent).toContain('你好')
-    expect(screen.getByRole('button', { name: '编辑笔记' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '编辑今日复盘' })).toBeInTheDocument()
   })
 
   it('renders diary images as capped top attachments', async () => {
@@ -150,7 +155,7 @@ describe('LearningJournalPage diary view', () => {
 
     const user = userEvent.setup()
     render(<LearningJournalPage />)
-    await user.click(await screen.findByRole('button', { name: '编辑笔记' }))
+    await user.click(await screen.findByRole('button', { name: '编辑今日复盘' }))
 
     await waitFor(() => expect(tiptapMockState.listeners.has('contextmenu')).toBe(true))
     tiptapMockState.listeners.get('contextmenu')?.(new MouseEvent('contextmenu', { clientX: 10, clientY: 20, cancelable: true }))
@@ -190,7 +195,7 @@ describe('LearningJournalPage diary view', () => {
     expect(container.querySelector('.journal-history-card__preview')?.textContent).toContain('listening practice')
   })
 
-  it('saves edited diary content and can request polish', async () => {
+  it('saves edited recap content and can request polish', async () => {
     const user = userEvent.setup()
     apiFetchMock.mockImplementation((url: string) => {
       if (url === '/api/notes/journal/today') {
@@ -208,7 +213,16 @@ describe('LearningJournalPage diary view', () => {
     })
 
     render(<LearningJournalPage />)
-    await user.click(await screen.findByRole('button', { name: '编辑笔记' }))
+    await user.click(await screen.findByRole('button', { name: '编辑今日复盘' }))
+    tiptapMockState.config?.onUpdate?.({ editor: { getHTML: () => '<p>今天完成了听力复习。</p>' } })
+    await new Promise(resolve => window.setTimeout(resolve, 2100))
+
+    await waitFor(() => {
+      expect(apiFetchMock).toHaveBeenCalledWith(
+        '/api/notes/journal',
+        expect.objectContaining({ method: 'POST' }),
+      )
+    })
     await user.click(await screen.findByRole('button', { name: 'AI 润色' }))
 
     await waitFor(() => {
@@ -223,7 +237,7 @@ describe('LearningJournalPage diary view', () => {
     expect(screen.getByRole('button', { name: '继续润色' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '拒绝' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '接受修改' })).toBeInTheDocument()
-  })
+  }, 8000)
 
   it('shows feedback instead of silently ignoring polish on empty content', async () => {
     const alertSpy = vi.spyOn(window, 'alert')
@@ -236,7 +250,7 @@ describe('LearningJournalPage diary view', () => {
     })
 
     render(<LearningJournalPage />)
-    await user.click(await screen.findByRole('button', { name: '编辑笔记' }))
+    await user.click(await screen.findByRole('button', { name: '编辑今日复盘' }))
     await user.click(await screen.findByRole('button', { name: 'AI 润色' }))
 
     expect(alertSpy).toHaveBeenCalledWith('请先写一点内容再润色')

@@ -17,18 +17,18 @@ vi.mock('../../../hooks', async () => {
   const actual = await vi.importActual<any>('../../../hooks')
   return {
     ...actual,
-    useAIChat: () => (PASSIVE_STUDY_SESSION_MIN_SECONDS: 30,
-  cancelSession: (...args: unknown[]) => cancelSessionMock(...args),
-  flushStudySessionOnPageHide: (...args: unknown[]) => flushStudySessionOnPageHideMock(...args),
-  logSession: (...args: unknown[]) => logSessionMock(...args),
-  markStudySessionRecoveryHandled: (...args: unknown[]) => markStudySessionRecoveryHandledMock(...args),
-  prepareStudySessionForLearningAction: undefined,
-  finalizeStudySessionSegment: undefined,
-  isStudySessionActive: undefined,
-  resolveStudySessionDurationSeconds: (...args: unknown[]) => resolveStudySessionDurationSecondsMock(...args),
-  startSession: (...args: unknown[]) => startSessionMock(...args),
-  touchStudySessionActivity: (...args: unknown[]) => touchStudySessionActivityMock(...args),
-  updateStudySessionSnapshot: (...args: unknown[]) => updateStudySessionSnapshotMock(...args)),
+    PASSIVE_STUDY_SESSION_MIN_SECONDS: 30,
+    cancelSession: (...args: unknown[]) => cancelSessionMock(...args),
+    flushStudySessionOnPageHide: (...args: unknown[]) => flushStudySessionOnPageHideMock(...args),
+    logSession: (...args: unknown[]) => logSessionMock(...args),
+    markStudySessionRecoveryHandled: (...args: unknown[]) => markStudySessionRecoveryHandledMock(...args),
+    prepareStudySessionForLearningAction: undefined,
+    finalizeStudySessionSegment: undefined,
+    isStudySessionActive: undefined,
+    resolveStudySessionDurationSeconds: (...args: unknown[]) => resolveStudySessionDurationSecondsMock(...args),
+    startSession: (...args: unknown[]) => startSessionMock(...args),
+    touchStudySessionActivity: (...args: unknown[]) => touchStudySessionActivityMock(...args),
+    updateStudySessionSnapshot: (...args: unknown[]) => updateStudySessionSnapshotMock(...args),
   }
 })
 

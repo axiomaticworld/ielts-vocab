@@ -27,6 +27,7 @@ interface CtxMenuState { x: number; y: number; visible: boolean }
 /* -- Image Gallery -- */
 
 const MAX_JOURNAL_IMAGES = 3
+const TODAY_RECAP_PLACEHOLDER = '写下今日复盘：今天完成了什么、进度如何、哪里需要查漏补缺、下一步怎么安排。'
 
 interface ImageGalleryProps {
   images: string[]
@@ -175,7 +176,7 @@ export default function TodayNotesDocument({
   const textContent = entry?.content ? stripImages(entry.content) : ''
 
   const editor = useEditor({
-    extensions: [StarterKit, Placeholder.configure({ placeholder: '开始写今天的笔记...' })],
+    extensions: [StarterKit, Placeholder.configure({ placeholder: TODAY_RECAP_PLACEHOLDER })],
     content: textContent ? renderJournalMarkdown(textContent) : '',
     editorProps: { attributes: { class: 'journal-editor-content' } },
     onUpdate: ({ editor }) => {
@@ -299,13 +300,13 @@ export default function TodayNotesDocument({
               <ImageGallery images={images} isReadOnly onRemove={() => {}} />
               <div className="journal-doc-body journal-doc-body--today markdown-content" dangerouslySetInnerHTML={{ __html: renderJournalMarkdown(textContent) }} />
             </div>
-            <div className="journal-doc-meta-row"><span>上次编辑于 {formatDateTime(entry.updated_at)}</span></div>
+            <div className="journal-doc-meta-row"><span>今日复盘上次编辑于 {formatDateTime(entry.updated_at)}</span></div>
           </div>
         </article>
       ) : (
         <div className="journal-empty journal-empty--main">
-          <p>今天还没有写笔记。</p>
-          <p>点击右上角编辑按钮开始记录今天的学习心得。</p>
+          <p>今天还没有写复盘。</p>
+          <p>点击右上角编辑今日复盘，记录今天完成了什么、进度如何、查漏补缺和下一步。</p>
         </div>
       )}
     </div>
