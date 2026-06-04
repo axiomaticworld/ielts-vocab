@@ -188,9 +188,13 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
         <View style={styles.heroScene}>
           <ImageBackground resizeMode="contain" source={practiceStatRibbon} style={styles.heroRibbon}>
             <View style={styles.ribbonTextWrap}>
-              <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={styles.ribbonText}>
-                今日掌握<Text style={styles.ribbonNumber}>{displayedTodayMasteredWords}</Text>词
-              </Text>
+              <Text numberOfLines={1} style={[styles.ribbonText, styles.ribbonTextPrefix]}>今日掌握</Text>
+              <View style={styles.ribbonNumberSlot}>
+                <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={styles.ribbonNumber}>
+                  {displayedTodayMasteredWords}
+                </Text>
+              </View>
+              <Text numberOfLines={1} style={[styles.ribbonText, styles.ribbonTextSuffix]}>词</Text>
             </View>
           </ImageBackground>
           <Image resizeMode="contain" source={practiceHeroTutor} style={styles.heroTutorCentered} />
@@ -366,21 +370,38 @@ const styles = StyleSheet.create({
     color: '#C3551C',
     fontSize: 30,
     fontWeight: '900',
+    lineHeight: 38,
+    minWidth: 80,
+    textAlign: 'center',
+  },
+  ribbonNumberSlot: {
+    alignItems: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
   },
   ribbonText: {
     color: '#6E4934',
     fontSize: 16,
     fontWeight: '900',
     lineHeight: 38,
-    textAlign: 'center',
-    width: '100%',
+    textAlign: 'left',
+  },
+  ribbonTextPrefix: {
+    position: 'absolute',
+    right: 156,
+  },
+  ribbonTextSuffix: {
+    left: 156,
+    position: 'absolute',
   },
   ribbonTextWrap: {
     alignItems: 'center',
     height: 58,
     justifyContent: 'center',
+    position: 'relative',
     paddingTop: 2,
-    width: 230,
+    width: 236,
   },
   heroRibbon: {
     alignItems: 'center',
