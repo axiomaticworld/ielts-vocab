@@ -1,4 +1,5 @@
 import { Skeleton } from '../../ui'
+import { extractJournalImages, stripJournalImages } from '../../../lib/journalImages'
 import { renderJournalMarkdown } from '../../../lib/journalMarkdown'
 import type { JournalEntry } from '../../../lib/schemas'
 
@@ -15,16 +16,30 @@ interface HistoryNotesDocumentProps {
 }
 
 function stripMarkdown(content: string, maxLen = 80): string {
-  const text = content
+  const text = stripJournalImages(content)
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/\*([^*]+)\*/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
-    .replace(/!\[.*?\]\(.*?\)/g, '[图片]')
+    .replace(/!\[.*?\]\(.*?\)/g, '')
     .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')
     .replace(/\n+/g, ' ')
     .trim()
   return text.length > maxLen ? text.slice(0, maxLen) + '...' : text
+}
+
+function HistoryImageThumbs({ images }: { images: string[] }) {
+  if (images.length === 0) return null
+
+  return (
+    <div className="journal-history-card__images" aria-label={`包含 ${images.length} 张图片`}>
+      {images.map((src, index) => (
+        <span key={`${src.slice(0, 32)}-${index}`} className="journal-history-card__image">
+          <img src={src} alt={`日记图片 ${index + 1}`} />
+        </span>
+      ))}
+    </div>
+  )
 }
 
 function HistorySkeleton() {
@@ -55,6 +70,8 @@ export default function HistoryNotesDocument({
 }: HistoryNotesDocumentProps) {
   // Detail view for a single selected entry
   if (selectedEntry) {
+    const detailImages = extractJournalImages(selectedEntry.content)
+    const detailText = stripJournalImages(selectedEntry.content)
     return (
       <div className="journal-doc-shell journal-doc-shell--history-detail">
         <button className="journal-back-btn" onClick={onBack}>
@@ -71,9 +88,18 @@ export default function HistoryNotesDocument({
               <span>更新于 {formatDateTime(selectedEntry.updated_at)}</span>
             </div>
           </header>
+          {detailImages.length > 0 && (
+            <section className="journal-history-detail-images" aria-label="日记图片附件">
+              {detailImages.map((src, index) => (
+                <figure key={`${src.slice(0, 32)}-${index}`}>
+                  <img src={src} alt={`日记图片 ${index + 1}`} />
+                </figure>
+              ))}
+            </section>
+          )}
           <div
             className="journal-doc-body markdown-content"
-            dangerouslySetInnerHTML={{ __html: renderJournalMarkdown(selectedEntry.content) }}
+            dangerouslySetInnerHTML={{ __html: renderJournalMarkdown(detailText) }}
           />
         </article>
       </div>
@@ -95,19 +121,24 @@ export default function HistoryNotesDocument({
       ) : (
         <>
           <div className="journal-history-grid">
-            {entries.map(entry => (
-              <button
-                key={entry.id}
-                className="journal-history-card"
-                onClick={() => onSelectEntry(entry)}
-              >
-                <span className="journal-history-card__date">{entry.date}</span>
-                <p className="journal-history-card__preview">{stripMarkdown(entry.content)}</p>
-                <span className="journal-history-card__time">
-                  {formatDateTime(entry.updated_at)}
-                </span>
-              </button>
-            ))}
+            {entries.map(entry => {
+              const images = extractJournalImages(entry.content)
+              const preview = stripMarkdown(entry.content)
+              return (
+                <button
+                  key={entry.id}
+                  className="journal-history-card"
+                  onClick={() => onSelectEntry(entry)}
+                >
+                  <span className="journal-history-card__date">{entry.date}</span>
+                  {preview && <p className="journal-history-card__preview">{preview}</p>}
+                  <HistoryImageThumbs images={images} />
+                  <span className="journal-history-card__time">
+                    {formatDateTime(entry.updated_at)}
+                  </span>
+                </button>
+              )
+            })}
           </div>
 
           {hasMore && (

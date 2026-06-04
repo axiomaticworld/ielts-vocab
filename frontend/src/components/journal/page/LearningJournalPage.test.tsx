@@ -177,7 +177,11 @@ describe('LearningJournalPage diary view', () => {
               ...todayEntry,
               id: 2,
               date: '2026-06-02',
-              content: '昨天记录了 listening practice。',
+              content: [
+                '昨天记录了 listening practice。',
+                '![image-1](data:image/png;base64,history1)',
+                '![image-2](data:image/png;base64,history2)',
+              ].join('\n\n'),
             },
           ],
           has_more: false,
@@ -215,7 +219,18 @@ describe('LearningJournalPage diary view', () => {
     await waitFor(() => expect(apiFetchMock.mock.calls.filter(([url]) => (
       typeof url === 'string' && url.startsWith('/api/notes/journal?')
     )).length).toBeGreaterThan(historyRequestsBeforeDraftEdit))
-    expect(container.querySelector('.journal-history-card__preview')?.textContent).toContain('listening practice')
+    const preview = container.querySelector('.journal-history-card__preview')
+    expect(preview?.textContent).toContain('listening practice')
+    expect(preview?.textContent).not.toContain('[图片]')
+    const cardImages = container.querySelectorAll('.journal-history-card__image img')
+    expect(cardImages).toHaveLength(2)
+    expect(cardImages[0]).toHaveAttribute('src', 'data:image/png;base64,history1')
+
+    await user.click(container.querySelector('.journal-history-card')!)
+    await screen.findByText('2026-06-02 笔记')
+    const detailImages = container.querySelectorAll('.journal-history-detail-images img')
+    expect(detailImages).toHaveLength(2)
+    expect(detailImages[1]).toHaveAttribute('src', 'data:image/png;base64,history2')
   })
 
   it('saves edited recap content and can request polish', async () => {

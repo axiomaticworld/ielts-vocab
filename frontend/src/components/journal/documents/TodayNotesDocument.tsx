@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { createPortal } from 'react-dom'
 import { htmlToMarkdown } from '../../../lib/htmlToMarkdown'
+import { extractJournalImages, MAX_JOURNAL_IMAGES, stripJournalImages } from '../../../lib/journalImages'
 import { renderJournalMarkdown } from '../../../lib/journalMarkdown'
 import type { JournalEntry } from '../../../lib/schemas'
 import { Button } from '../../ui/Button'
@@ -27,7 +28,6 @@ interface CtxMenuState { x: number; y: number; visible: boolean }
 
 /* -- Image Gallery -- */
 
-const MAX_JOURNAL_IMAGES = 3
 const TODAY_RECAP_PLACEHOLDER = '写下今日复盘：今天完成了什么、进度如何、哪里需要查漏补缺、下一步怎么安排。'
 
 interface ImageGalleryProps {
@@ -151,18 +151,6 @@ function PolishModal({ original, polished, onAccept, onReject, onContinuePolish,
   )
 }
 
-/* ── Parse images from markdown content ── */
-const IMG_RE = /!\[.*?\]\((data:image\/[^)]+)\)/g
-function extractImages(content: string): string[] {
-  const imgs: string[] = []
-  let m: RegExpExecArray | null
-  while ((m = IMG_RE.exec(content)) !== null) { imgs.push(m[1]) }
-  return imgs.slice(0, MAX_JOURNAL_IMAGES)
-}
-function stripImages(content: string): string {
-  return content.replace(IMG_RE, '').replace(/\n{3,}/g, '\n\n').trim()
-}
-
 /* ── Main Component ── */
 
 export default function TodayNotesDocument({
@@ -177,11 +165,11 @@ export default function TodayNotesDocument({
   // Load images from entry on mount / entry change
   useEffect(() => {
     if (entry?.content) {
-      setImages(extractImages(entry.content))
+      setImages(extractJournalImages(entry.content))
     }
   }, [entry?.content])
 
-  const textContent = entry?.content ? stripImages(entry.content) : ''
+  const textContent = entry?.content ? stripJournalImages(entry.content) : ''
 
   const editor = useEditor({
     extensions: [StarterKit, Placeholder.configure({ placeholder: TODAY_RECAP_PLACEHOLDER })],

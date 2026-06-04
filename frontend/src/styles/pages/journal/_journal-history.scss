@@ -51,6 +51,28 @@
   overflow: hidden;
 }
 
+.journal-history-card__images {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--size-8);
+}
+
+.journal-history-card__image {
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--size-10);
+  border: var(--size-1) solid var(--border-subtle);
+  background: var(--surface-muted);
+}
+
+.journal-history-card__image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
 .journal-history-card__time {
   font-size: 0.76rem;
   color: var(--text-tertiary);
@@ -129,6 +151,29 @@
   }
 }
 
+.journal-history-detail-images {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(var(--size-112), var(--size-160)));
+  gap: var(--size-12);
+  margin-bottom: var(--size-16);
+}
+
+.journal-history-detail-images figure {
+  margin: 0;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--size-12);
+  border: var(--size-1) solid var(--border-subtle);
+  background: var(--surface-muted);
+}
+
+.journal-history-detail-images img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* ── History Skeleton ── */
 
 .journal-history-skeleton {
@@ -156,5 +201,9 @@
 
   .journal-history-skeleton {
     grid-template-columns: 1fr;
+  }
+
+  .journal-history-detail-images {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
