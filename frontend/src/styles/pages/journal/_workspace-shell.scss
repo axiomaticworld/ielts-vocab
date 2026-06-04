@@ -60,90 +60,12 @@
   padding: 0;
 }
 
-.journal-date-range-field {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  min-height: var(--size-40);
-  padding: 0 var(--size-8);
-  border: var(--size-1) solid var(--border-subtle);
-  border-radius: var(--size-10);
-  background: color-mix(in srgb, var(--surface-base) var(--mix-98), var(--surface-muted));
-  transition:
-    border-color var(--transition-fast),
-    box-shadow var(--transition-fast),
-    background var(--transition-fast);
-}
-
-.journal-date-range-field:hover {
-  border-color: color-mix(in srgb, var(--accent) var(--mix-28), var(--border));
-}
-
-.journal-date-range-field:focus-within {
-  border-color: color-mix(in srgb, var(--accent) var(--mix-52), var(--border));
-  box-shadow: 0 0 0 var(--size-3) color-mix(in srgb, var(--accent) var(--mix-10), transparent);
-}
-
-.journal-date-range-segment {
-  position: relative;
-  flex: 0 1 var(--size-180);
-  min-width: var(--size-160);
-  gap: var(--size-8);
-  padding: 0 var(--size-4);
-}
-
 .journal-filter-label {
   flex-shrink: 0;
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--text-tertiary);
-}
-
-.journal-date-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 var(--size-16);
-  width: var(--size-16);
-  height: var(--size-16);
-  color: var(--text-tertiary);
-  pointer-events: none;
-}
-
-.journal-date-icon svg {
-  width: var(--size-16);
-  height: var(--size-16);
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-}
-
-.journal-date-range-separator {
-  flex: 0 0 auto;
-  color: var(--text-tertiary);
-  font-size: var(--size-13);
-  line-height: 1;
-  padding: 0 var(--size-2);
-}
-
-.journal-date-input {
-  width: 100%;
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: var(--size-38);
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--text-primary);
-  font: inherit;
-  font-size: var(--size-14);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
-  appearance: none;
-  outline: none;
-  box-shadow: none;
 }
 
 .journal-filter-reset,
@@ -434,4 +356,3 @@
   font-weight: 700;
   color: var(--accent);
 }
-

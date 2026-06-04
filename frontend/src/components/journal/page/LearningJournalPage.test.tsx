@@ -195,6 +195,10 @@ describe('LearningJournalPage diary view', () => {
     expect(container.querySelector('#journal-start-date')).toHaveAttribute('placeholder', 'YYYY/MM/DD')
     expect(container.querySelector('#journal-end-date')).toHaveAttribute('type', 'text')
     expect(container.querySelector('#journal-end-date')).toHaveAttribute('placeholder', 'YYYY/MM/DD')
+    await user.click(screen.getByLabelText('开始日期'))
+    expect(screen.getByRole('dialog', { name: '选择日记日期范围' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '上星期' })).toBeInTheDocument()
+    expect(screen.getAllByText(/2026年/)).not.toHaveLength(0)
     expect(container.querySelector('.journal-history-card__preview')?.textContent).toContain('listening practice')
   })
 

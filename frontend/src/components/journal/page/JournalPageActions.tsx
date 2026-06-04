@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
 import refreshIcon from '../../../assets/icons/refresh.svg'
 import { today } from '../../../composables/journal/page/journalPageUtils'
 import { MicroLoading } from '../../ui'
@@ -11,6 +12,12 @@ const CALENDAR_ICON = (
 
 const DATE_DISPLAY_PLACEHOLDER = 'YYYY/MM/DD'
 const DATE_INPUT_PATTERN = /^([0-9]{4})[/-]([0-9]{2})[/-]([0-9]{2})$/
+const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六']
+const RANGE_SHORTCUTS = [
+  { label: '上星期', days: 7 },
+  { label: '上个月', months: 1 },
+  { label: '过去三个月', months: 3 },
+]
 
 function formatDateForInput(value: string): string {
   return value.replaceAll('-', '/')
@@ -24,6 +31,38 @@ function normalizeDateInput(value: string, max?: string): string {
   const normalized = match ? `${match[1]}-${match[2]}-${match[3]}` : trimmed.replaceAll('/', '-')
   if (max && DATE_INPUT_PATTERN.test(normalized) && normalized > max) return max
   return normalized
+}
+
+function dateFromISO(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function isoFromDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function addMonths(date: Date, offset: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + offset, 1)
+}
+
+function addDays(date: Date, offset: number): Date {
+  const next = new Date(date)
+  next.setDate(next.getDate() + offset)
+  return next
+}
+
+function monthLabel(date: Date): string {
+  return `${date.getFullYear()}年 ${date.getMonth() + 1}月`
+}
+
+function buildMonthDays(monthDate: Date) {
+  const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)
+  const start = addDays(firstDay, -firstDay.getDay())
+  return Array.from({ length: 42 }, (_, index) => addDays(start, index))
 }
 
 /* ── Today Notes Actions (edit toggle + AI polish) ── */
@@ -109,40 +148,214 @@ export function JournalNotesActions({
   onResetDates,
   onExport,
 }: NotesActionsProps) {
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [draftStart, setDraftStart] = useState(startDate)
+  const [draftEnd, setDraftEnd] = useState(endDate)
+  const [monthCursor, setMonthCursor] = useState(() => dateFromISO(startDate || endDate || today()))
+  const pickerRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    setDraftStart(startDate)
+    setDraftEnd(endDate)
+  }, [startDate, endDate])
+
+  useEffect(() => {
+    if (!panelOpen) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!pickerRef.current?.contains(event.target as Node)) setPanelOpen(false)
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPanelOpen(false)
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [panelOpen])
+
+  const calendarMonths = useMemo(() => {
+    const leftMonth = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1)
+    return [leftMonth, addMonths(leftMonth, 1)]
+  }, [monthCursor])
+
+  const openPanel = () => {
+    setMonthCursor(dateFromISO(startDate || endDate || today()))
+    setPanelOpen(true)
+  }
+
+  const applyRange = (nextStart: string, nextEnd: string) => {
+    onStartDateChange(nextStart)
+    onEndDateChange(nextEnd)
+  }
+
+  const handleShortcut = (shortcut: (typeof RANGE_SHORTCUTS)[number]) => {
+    const end = today()
+    const endDateValue = dateFromISO(end)
+    const startDateValue = shortcut.months
+      ? addMonths(endDateValue, -shortcut.months)
+      : addDays(endDateValue, -shortcut.days + 1)
+    const nextStart = isoFromDate(startDateValue)
+    setDraftStart(nextStart)
+    setDraftEnd(end)
+    applyRange(nextStart, end)
+    setPanelOpen(false)
+  }
+
+  const handleDaySelect = (dateValue: string) => {
+    if (!draftStart || (draftStart && draftEnd)) {
+      setDraftStart(dateValue)
+      setDraftEnd('')
+      return
+    }
+
+    if (dateValue < draftStart) {
+      setDraftEnd(draftStart)
+      setDraftStart(dateValue)
+      return
+    }
+    setDraftEnd(dateValue)
+  }
+
+  const clearRange = () => {
+    setDraftStart('')
+    setDraftEnd(today())
+    applyRange('', today())
+    setPanelOpen(false)
+  }
+
+  const confirmRange = () => {
+    applyRange(draftStart, draftEnd || today())
+    setPanelOpen(false)
+  }
+
   return (
     <div className="journal-filter-bar">
-      <div className="journal-date-range-field" aria-label="日记日期范围筛选">
-        <div className="journal-filter-group journal-date-range-segment">
-          <label className="journal-filter-label" htmlFor="journal-start-date">开始日期</label>
-          <span className="journal-date-icon">{CALENDAR_ICON}</span>
-          <input
-            id="journal-start-date"
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder={DATE_DISPLAY_PLACEHOLDER}
-            className="journal-date-input"
-            value={formatDateForInput(startDate)}
-            onChange={event => onStartDateChange(normalizeDateInput(event.target.value, endDate || today()))}
-          />
+      <div className="journal-date-picker" ref={pickerRef}>
+        <div
+          className="journal-date-range-field"
+          aria-label="日记日期范围筛选"
+          aria-haspopup="dialog"
+          aria-expanded={panelOpen}
+          onPointerDown={openPanel}
+        >
+          <div className="journal-filter-group journal-date-range-segment">
+            <label className="journal-filter-label" htmlFor="journal-start-date">开始日期</label>
+            <span className="journal-date-icon">{CALENDAR_ICON}</span>
+            <input
+              id="journal-start-date"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder={DATE_DISPLAY_PLACEHOLDER}
+              className="journal-date-input"
+              value={formatDateForInput(startDate)}
+              onFocus={openPanel}
+              onChange={event => onStartDateChange(normalizeDateInput(event.target.value, endDate || today()))}
+            />
+          </div>
+
+          <span className="journal-date-range-separator" aria-hidden="true">到</span>
+
+          <div className="journal-filter-group journal-date-range-segment">
+            <label className="journal-filter-label" htmlFor="journal-end-date">结束日期</label>
+            <span className="journal-date-icon">{CALENDAR_ICON}</span>
+            <input
+              id="journal-end-date"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder={DATE_DISPLAY_PLACEHOLDER}
+              className="journal-date-input"
+              value={formatDateForInput(endDate)}
+              onFocus={openPanel}
+              onChange={event => onEndDateChange(normalizeDateInput(event.target.value, today()))}
+            />
+          </div>
         </div>
 
-        <span className="journal-date-range-separator" aria-hidden="true">—</span>
+        {panelOpen && (
+          <div className="journal-date-popover" role="dialog" aria-label="选择日记日期范围">
+            <div className="journal-date-shortcuts">
+              {RANGE_SHORTCUTS.map(shortcut => (
+                <button key={shortcut.label} type="button" onClick={() => handleShortcut(shortcut)}>
+                  {shortcut.label}
+                </button>
+              ))}
+            </div>
 
-        <div className="journal-filter-group journal-date-range-segment">
-          <label className="journal-filter-label" htmlFor="journal-end-date">结束日期</label>
-          <span className="journal-date-icon">{CALENDAR_ICON}</span>
-          <input
-            id="journal-end-date"
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder={DATE_DISPLAY_PLACEHOLDER}
-            className="journal-date-input"
-            value={formatDateForInput(endDate)}
-            onChange={event => onEndDateChange(normalizeDateInput(event.target.value, today()))}
-          />
-        </div>
+            <div className="journal-date-panel">
+              <div className="journal-date-panel-inputs">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="开始日期"
+                  value={formatDateForInput(draftStart)}
+                  onChange={event => setDraftStart(normalizeDateInput(event.target.value, draftEnd || today()))}
+                />
+                <span>›</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="结束日期"
+                  value={formatDateForInput(draftEnd)}
+                  onChange={event => setDraftEnd(normalizeDateInput(event.target.value, today()))}
+                />
+              </div>
+
+              <div className="journal-date-calendars">
+                {calendarMonths.map((monthDate, monthIndex) => (
+                  <div className="journal-date-calendar" key={monthDate.toISOString()}>
+                    <div className="journal-date-calendar__header">
+                      {monthIndex === 0 && (
+                        <button type="button" onClick={() => setMonthCursor(addMonths(monthCursor, -1))}>‹</button>
+                      )}
+                      <strong>{monthLabel(monthDate)}</strong>
+                      {monthIndex === 1 && (
+                        <button type="button" onClick={() => setMonthCursor(addMonths(monthCursor, 1))}>›</button>
+                      )}
+                    </div>
+                    <div className="journal-date-weekdays">
+                      {WEEKDAY_LABELS.map(label => <span key={label}>{label}</span>)}
+                    </div>
+                    <div className="journal-date-days">
+                      {buildMonthDays(monthDate).map(day => {
+                        const dateValue = isoFromDate(day)
+                        const isOutside = day.getMonth() !== monthDate.getMonth()
+                        const isDisabled = dateValue > today()
+                        const isSelected = dateValue === draftStart || dateValue === draftEnd
+                        const isInRange = Boolean(draftStart && draftEnd && dateValue > draftStart && dateValue < draftEnd)
+                        return (
+                          <button
+                            key={dateValue}
+                            type="button"
+                            className={[
+                              isOutside ? 'is-outside' : '',
+                              isSelected ? 'is-selected' : '',
+                              isInRange ? 'is-in-range' : '',
+                            ].filter(Boolean).join(' ')}
+                            disabled={isDisabled}
+                            onClick={() => handleDaySelect(dateValue)}
+                          >
+                            {day.getDate()}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="journal-date-actions">
+                <button type="button" onClick={clearRange}>清除</button>
+                <button type="button" className="journal-date-actions__primary" onClick={confirmRange}>好的</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <button
         className="journal-filter-reset"
