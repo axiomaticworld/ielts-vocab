@@ -160,4 +160,67 @@ describe('mobile quick-memory due review contract', () => {
     assert.match(answerSubmissionSource, /export function usePracticeAnswerSubmission/)
     assert.equal(practiceSource.includes('evaluatePracticeAnswer(currentWord'), false)
   })
+
+  it('keeps wrong-word recovery filters and selected-word review wired on mobile', () => {
+    const learnerApiSource = read('apps/mobile/src/api/learnerApi.ts')
+    const errorsSource = read('apps/mobile/src/screens/ErrorsScreen.tsx')
+    const practiceSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
+    const navigationSource = read('apps/mobile/src/navigation/types.ts')
+
+    assert.match(learnerApiSource, /dim: filters\.dimension === 'all' \? undefined : filters\.dimension/)
+    assert.match(learnerApiSource, /mode: filters\.mode === 'all' \? undefined : filters\.mode/)
+    assert.match(errorsSource, /testID="errors\.practiceSelected"/)
+    assert.match(errorsSource, /selectedWrongWords: selectedWordValues/)
+    assert.match(errorsSource, /testID=\{`errors\.dimension\.\$\{item\.value\}`\}/)
+    assert.match(errorsSource, /testID=\{`errors\.mode\.\$\{item\.value\}`\}/)
+    assert.match(navigationSource, /selectedWrongWords\?: string\[\]/)
+    assert.match(navigationSource, /wrongWordFilters\?: MobileWrongWordFilters/)
+    assert.match(practiceSource, /buildMobileWrongWordsReviewQueue/)
+    assert.match(practiceSource, /options\?\.selectedWrongWords \?\? \[\]/)
+  })
+
+  it('keeps wrong-word next-round and progress persistence wired on mobile', () => {
+    const practiceSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
+    const progressStorageSource = read('apps/mobile/src/screens/errorReviewProgressStorage.ts')
+
+    assert.match(progressStorageSource, /CORE_STORAGE_KEYS\.wrongWordReview/)
+    assert.match(progressStorageSource, /buildErrorReviewProgress/)
+    assert.match(practiceSource, /hydrateErrorReviewProgress/)
+    assert.match(practiceSource, /persistErrorReviewProgress/)
+    assert.match(practiceSource, /buildNextErrorReviewRoundWords/)
+    assert.match(practiceSource, /testID="practice\.errors\.nextRound"/)
+    assert.match(practiceSource, /updateErrorReviewRoundResults/)
+  })
+
+  it('builds selected and retry wrong-word queues with app-core helpers', () => {
+    const words = [
+      makeWrongWord('Alpha', 'recognition'),
+      makeWrongWord('Beta', 'meaning'),
+    ]
+
+    assert.deepEqual(buildMobileWrongWordsReviewQueue(words, {}, ['Beta']).map(item => item.word), ['Beta'])
+    assert.deepEqual(buildNextErrorReviewRoundWords(words, { alpha: true, beta: false }).map(item => item.word), ['Beta'])
+  })
+
+  it('wires smart mode to profile-backed dimension choice and smart-stats sync', () => {
+    const learnerApiSource = read('apps/mobile/src/api/learnerApi.ts')
+    const smartHookSource = read('apps/mobile/src/screens/useMobileSmartPractice.ts')
+    const practiceSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
+
+    assert.match(learnerApiSource, /export async function loadSmartStats/)
+    assert.match(learnerApiSource, /\/api\/ai\/smart-stats/)
+    assert.match(learnerApiSource, /export async function syncSmartStats/)
+    assert.match(smartHookSource, /loadLearnerProfile\(\)/)
+    assert.match(smartHookSource, /loadLearningStats\(\)/)
+    assert.match(smartHookSource, /chooseSmartPracticeDimension/)
+    assert.match(smartHookSource, /recordSmartPracticeResult/)
+    assert.match(smartHookSource, /mode: 'smart'/)
+    assert.match(practiceSource, /resolveSmartPracticeMode\(smartDimension\)/)
+    assert.match(practiceSource, /const currentSmartDimension = mode === 'smart' \? smartDimension : undefined/)
+    assert.match(practiceSource, /evaluatePracticeAnswer\(currentWord, mode, value, \{ smartDimension: currentSmartDimension \}\)/)
+    assert.match(practiceSource, /recordSmartAnswer\(\{ bookId, chapterId, correct: result\.correct, dimension: currentSmartDimension/)
+    assert.match(practiceSource, /buildWrongWordRecord\(currentWord, mode, currentSmartDimension\)/)
+    assert.match(practiceSource, /mode === 'quickmemory' \|\| mode === 'test'/)
+    assert.match(practiceSource, /activeMode === 'listening'/)
+  })
 })
