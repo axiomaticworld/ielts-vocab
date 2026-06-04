@@ -78,14 +78,14 @@ function readObject(value: unknown): Record<string, unknown> | null {
 
 function preferredDimensionFromContext(context?: SmartPracticeContext): SmartPracticeDimension | null {
   const profile = readObject(context?.learnerProfile)
+  const profileSummary = readObject(profile?.summary)
+  const profileWeakest = normalizeSmartDimension(profileSummary?.weakest_mode)
+  if (profileWeakest) return profileWeakest
   const dimensions = Array.isArray(profile?.dimensions) ? profile.dimensions : []
   for (const item of dimensions) {
     const dimension = normalizeSmartDimension(readObject(item)?.dimension)
     if (dimension) return dimension
   }
-  const profileSummary = readObject(profile?.summary)
-  const profileWeakest = normalizeSmartDimension(profileSummary?.weakest_mode)
-  if (profileWeakest) return profileWeakest
 
   const learningStats = readObject(context?.learningStats)
   const alltime = readObject(learningStats?.alltime)
