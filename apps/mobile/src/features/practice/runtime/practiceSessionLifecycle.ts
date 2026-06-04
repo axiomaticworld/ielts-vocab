@@ -11,7 +11,7 @@ import {
   type PracticeQueueSource,
   type StoredPracticeProgressSnapshot,
 } from '@ielts-vocab/app-core'
-import type { ProgressSnapshot } from '../api/learnerApi'
+import type { ProgressSnapshot } from '../../../api/learnerApi'
 
 type PracticeProgressBaseline = {
   correctCount: number

@@ -9,7 +9,7 @@ import {
   type SmartPracticeDimension,
   type SmartWordStatsStore,
 } from '@ielts-vocab/app-core'
-import { loadLearnerProfile, loadLearningStats, loadSmartStats, syncSmartStats } from '../api/learnerApi'
+import { loadLearnerProfile, loadLearningStats, loadSmartStats, syncSmartStats } from '../../../api/learnerApi'
 
 export function useMobileSmartPractice() {
   const [smartStats, setSmartStats] = useState<SmartWordStatsStore>({})

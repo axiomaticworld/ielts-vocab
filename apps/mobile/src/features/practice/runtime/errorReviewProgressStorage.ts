@@ -10,8 +10,8 @@ import {
   type MobileWrongWordFilters,
   type PracticeMode,
 } from '@ielts-vocab/app-core'
-import type { NavigateOptions } from '../navigation/types'
-import { asyncAppStorage } from '../storage/mobileStorage'
+import type { NavigateOptions } from '../../../navigation/types'
+import { asyncAppStorage } from '../../../storage/mobileStorage'
 
 export function getErrorReviewFilters(options?: NavigateOptions): MobileWrongWordFilters {
   return {

@@ -7,8 +7,8 @@ import {
   type PracticeMode,
   type PracticeQueueSource,
 } from '@ielts-vocab/app-core'
-import { loadBooks, loadChapterWords, loadChapters, loadQuickMemoryReviewQueue, loadWrongWords } from '../api/learnerApi'
-import type { NavigateOptions } from '../navigation/types'
+import { loadBooks, loadChapterWords, loadChapters, loadQuickMemoryReviewQueue, loadWrongWords } from '../../../api/learnerApi'
+import type { NavigateOptions } from '../../../navigation/types'
 import { getErrorReviewFilters } from './errorReviewProgressStorage'
 
 const QUICK_MEMORY_REVIEW_LIMIT = 10

@@ -13,7 +13,7 @@ function read(relativePath: string): string {
 describe('mobile audio practice parity contract', () => {
   it('keeps listening and dictation replay wired through a shared audio-mode hook', () => {
     const screenSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
-    const hookSource = read('apps/mobile/src/screens/usePracticeAudioModes.ts')
+    const hookSource = read('apps/mobile/src/features/practice/runtime/usePracticeAudioModes.ts')
 
     assert.match(screenSource, /usePracticeAudioModes\(/)
     assert.match(screenSource, /testID="practice\.audio\.replay"/)
@@ -25,11 +25,11 @@ describe('mobile audio practice parity contract', () => {
 
   it('shows explicit dictation spelling feedback and replays after a wrong spelling', () => {
     const screenSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
-    const helperSource = read('apps/mobile/src/screens/PracticeScreen.helpers.ts')
-    const answerSubmissionSource = read('apps/mobile/src/screens/usePracticeAnswerSubmission.ts')
+    const feedbackSource = read('apps/mobile/src/features/practice/runtime/practiceFeedback.ts')
+    const answerSubmissionSource = read('apps/mobile/src/features/practice/runtime/usePracticeAnswerSubmission.ts')
 
-    assert.match(helperSource, /buildDictationFeedback/)
-    assert.match(helperSource, /拼写不一致/)
+    assert.match(feedbackSource, /buildDictationFeedback/)
+    assert.match(feedbackSource, /拼写不一致/)
     assert.match(answerSubmissionSource, /params\.activeMode === 'dictation' && !result\.correct/)
     assert.match(answerSubmissionSource, /buildDictationFeedback\(value, result\.expected\)/)
     assert.match(answerSubmissionSource, /void params\.playWord\('auto'\)/)
@@ -49,7 +49,7 @@ describe('mobile audio practice parity contract', () => {
 
   it('adds radio play-pause-next progression and visible interaction recording', () => {
     const screenSource = read('apps/mobile/src/screens/PracticeScreen.tsx')
-    const hookSource = read('apps/mobile/src/screens/usePracticeAudioModes.ts')
+    const hookSource = read('apps/mobile/src/features/practice/runtime/usePracticeAudioModes.ts')
 
     assert.match(screenSource, /testID="practice\.radio\.toggle"/)
     assert.match(screenSource, /testID="practice\.radio\.next"/)
