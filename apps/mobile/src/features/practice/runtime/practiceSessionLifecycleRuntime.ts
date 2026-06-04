@@ -3,8 +3,8 @@ import {
   loadChapterProgress,
   logPracticeSession,
   savePracticeProgress,
-} from '../api/learnerApi'
-import { asyncAppStorage } from '../storage/mobileStorage'
+} from '../../../api/learnerApi'
+import { asyncAppStorage } from '../../../storage/mobileStorage'
 import type { PracticeSessionDependencies } from './practiceSessionLifecycle'
 
 export const practiceSessionDependencies: PracticeSessionDependencies = {

@@ -11,10 +11,10 @@ import {
   type PracticeQueueSource,
   type SmartPracticeDimension,
 } from '@ielts-vocab/app-core'
-import { syncQuickMemory, syncWrongWord } from '../api/learnerApi'
-import type { NavigateOptions } from '../navigation/types'
+import { syncQuickMemory, syncWrongWord } from '../../../api/learnerApi'
+import type { NavigateOptions } from '../../../navigation/types'
 import { persistErrorReviewProgress } from './errorReviewProgressStorage'
-import { buildDictationFeedback } from './PracticeScreen.helpers'
+import { buildDictationFeedback } from './practiceFeedback'
 import { completePracticeSession, persistPracticeSessionProgress } from './practiceSessionLifecycle'
 import { practiceSessionDependencies } from './practiceSessionLifecycleRuntime'
 

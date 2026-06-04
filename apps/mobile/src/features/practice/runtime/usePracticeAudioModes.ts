@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MobileWord, PracticeMode } from '@ielts-vocab/app-core'
-import { playRemoteAudio, stopRemoteAudio } from '../native/NativeAudioPlayer'
+import { playRemoteAudio, stopRemoteAudio } from '../../../native/NativeAudioPlayer'
 
 const AUTO_REPLAY_DELAY_MS = 280
 const RADIO_NEXT_DELAY_MS = 3_200

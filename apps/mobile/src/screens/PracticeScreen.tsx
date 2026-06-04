@@ -15,19 +15,24 @@ import { Card, Field, Heading, Meta, Pill, PrimaryButton, ScreenScroll, StatusTe
 import type { Navigate, NavigateOptions } from '../navigation/types'
 import { useMobileSpeechRecognition } from '../speech/useMobileSpeechRecognition'
 import { theme } from '../theme'
-import { hydrateErrorReviewProgress, persistErrorReviewProgress } from './errorReviewProgressStorage'
+import {
+  hydrateErrorReviewProgress,
+  hydratePracticeSession,
+  loadBookChapters,
+  loadPracticeBootstrap,
+  loadPracticeQueue,
+  persistErrorReviewProgress,
+  practiceSessionDependencies,
+  useMobileSmartPractice,
+  usePracticeAnswerSubmission,
+  usePracticeAudioModes,
+  usePracticeSessionState,
+} from '../features/practice/runtime'
 import { PracticeCompletionCard, PracticeEntryPanel, type PracticeEntry, type PracticeEntryKey } from './PracticeEntryPanel'
 import { entryForMode, initialDueReviewRequested, initialEntry, isRecognitionReviewMode, searchableText } from './PracticeScreen.helpers'
 import { PracticeScopeSheet } from './PracticeScopeSheet'
 import { PracticeStatusHeader } from './PracticeStatusHeader'
 import { styles } from './PracticeScreen.styles'
-import { hydratePracticeSession } from './practiceSessionLifecycle'
-import { loadBookChapters, loadPracticeBootstrap, loadPracticeQueue } from './practiceDataLoading'
-import { practiceSessionDependencies } from './practiceSessionLifecycleRuntime'
-import { usePracticeAnswerSubmission } from './usePracticeAnswerSubmission'
-import { useMobileSmartPractice } from './useMobileSmartPractice'
-import { usePracticeAudioModes } from './usePracticeAudioModes'
-import { usePracticeSessionState } from './usePracticeSessionState'
 
 type SheetState = 'mode' | 'scope' | null
 
