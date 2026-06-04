@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -101,7 +102,14 @@ function ImageGallery({ images, isReadOnly, onAddImage, onRemove }: ImageGallery
 
 function EditorContextMenu({ x, y, onClose, onInsertImage }: { x: number; y: number; onClose: () => void; onInsertImage: () => void }) {
   return (
-    <div className="journal-ctx-menu" style={{ left: x, top: y }} role="menu">
+    <div
+      className="journal-ctx-menu"
+      style={{
+        '--journal-ctx-left': `${x}px`,
+        '--journal-ctx-top': `${y}px`,
+      } as CSSProperties}
+      role="menu"
+    >
       <button className="journal-ctx-menu-item" role="menuitem" onClick={() => { onInsertImage(); onClose() }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />

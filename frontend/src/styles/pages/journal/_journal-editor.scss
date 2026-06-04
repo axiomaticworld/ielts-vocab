@@ -188,7 +188,7 @@
 .journal-polish-modal__content {
   flex: 1;
   min-height: 0;
-  max-height: min(34vh, 320px);
+  max-height: min(34vh, var(--size-320));
   overflow-y: auto;
   padding: var(--size-12) var(--size-14);
   border: var(--size-1) solid var(--border-subtle);
@@ -241,8 +241,10 @@
 
 .journal-ctx-menu {
   position: fixed;
-  z-index: 901;
-  min-width: var(--size-152);
+  left: var(--journal-ctx-left, 0);
+  top: var(--journal-ctx-top, 0);
+  z-index: var(--layer-dropdown);
+  min-width: var(--size-156);
   padding: var(--size-6);
   border-radius: var(--size-10);
   background: var(--surface-base);
@@ -325,13 +327,13 @@
 
 .journal-image-card-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 188px));
+  grid-template-columns: repeat(3, minmax(0, var(--size-186)));
   gap: var(--size-12);
   align-items: stretch;
 }
 
 .journal-image-card-grid--readonly {
-  grid-template-columns: repeat(auto-fit, minmax(168px, 188px));
+  grid-template-columns: repeat(auto-fit, minmax(var(--size-168), var(--size-186)));
 }
 
 .journal-image-card {
@@ -339,7 +341,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: 150px;
+  height: var(--size-148);
   margin: 0;
   overflow: hidden;
   border: var(--size-1) solid var(--border-subtle);
@@ -350,7 +352,7 @@
   figcaption {
     display: flex;
     align-items: center;
-    height: 36px;
+    height: var(--size-36);
     padding: 0 var(--size-10);
     color: var(--text-tertiary);
     font-size: 0.78rem;
@@ -364,7 +366,7 @@
 
 .journal-image-card__preview {
   width: 100%;
-  height: 114px;
+  height: var(--size-112);
   padding: 0;
   border: 0;
   background: var(--surface-muted);
@@ -414,14 +416,14 @@
   height: var(--size-24);
   border: none;
   border-radius: var(--size-6);
-  background: rgba(0, 0, 0, 0.58);
-  color: #fff;
+  background: color-mix(in srgb, var(--surface-code) var(--mix-58), transparent);
+  color: var(--text-inverse);
   cursor: pointer;
   opacity: 0;
   transition: opacity var(--transition-fast), background var(--transition-fast);
 
   &:hover {
-    background: rgba(0, 0, 0, 0.78);
+    background: color-mix(in srgb, var(--surface-code) var(--mix-78), transparent);
   }
 }
 
@@ -447,6 +449,6 @@
   }
 
   .journal-image-card-grid {
-    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(var(--size-148), 1fr));
   }
 }
