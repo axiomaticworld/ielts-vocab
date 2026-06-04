@@ -11,6 +11,7 @@ Use this folder for product and execution-oriented plans.
 
 - [product-requirements-document.md](./product-requirements-document.md): current product baseline, goals, scope, and success criteria
 - [ui-redesign-plan.md](./ui-redesign-plan.md): phased UI polish plan for the current product surface
+- [mobile-visual-resource-list.md](./mobile-visual-resource-list.md): mobile hand-drawn visual resource inventory for page chrome, cards, controls, icons, and feedback states
 
 ## Rules
 
