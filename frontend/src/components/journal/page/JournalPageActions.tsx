@@ -10,7 +10,8 @@ const CALENDAR_ICON = (
   </svg>
 )
 
-const DATE_DISPLAY_PLACEHOLDER = 'YYYY/MM/DD'
+const START_DATE_PLACEHOLDER = '开始日期'
+const END_DATE_PLACEHOLDER = '结束日期'
 const DATE_INPUT_PATTERN = /^([0-9]{4})[/-]([0-9]{2})[/-]([0-9]{2})$/
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六']
 const RANGE_SHORTCUTS = [
@@ -243,14 +244,14 @@ export function JournalNotesActions({
           onPointerDown={openPanel}
         >
           <div className="journal-filter-group journal-date-range-segment">
-            <label className="journal-filter-label" htmlFor="journal-start-date">开始日期</label>
             <span className="journal-date-icon">{CALENDAR_ICON}</span>
             <input
               id="journal-start-date"
               type="text"
               inputMode="numeric"
               autoComplete="off"
-              placeholder={DATE_DISPLAY_PLACEHOLDER}
+              aria-label={START_DATE_PLACEHOLDER}
+              placeholder={START_DATE_PLACEHOLDER}
               className="journal-date-input"
               value={formatDateForInput(startDate)}
               readOnly
@@ -261,14 +262,14 @@ export function JournalNotesActions({
           <span className="journal-date-range-separator" aria-hidden="true">到</span>
 
           <div className="journal-filter-group journal-date-range-segment">
-            <label className="journal-filter-label" htmlFor="journal-end-date">结束日期</label>
             <span className="journal-date-icon">{CALENDAR_ICON}</span>
             <input
               id="journal-end-date"
               type="text"
               inputMode="numeric"
               autoComplete="off"
-              placeholder={DATE_DISPLAY_PLACEHOLDER}
+              aria-label={END_DATE_PLACEHOLDER}
+              placeholder={END_DATE_PLACEHOLDER}
               className="journal-date-input"
               value={formatDateForInput(endDate)}
               readOnly

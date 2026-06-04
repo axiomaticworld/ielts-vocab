@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import LearningJournalPage from './LearningJournalPage'
@@ -192,19 +192,22 @@ describe('LearningJournalPage diary view', () => {
     await screen.findByText('2026-06-02')
     expect(container.querySelector('.journal-date-range-field')).not.toBeNull()
     expect(container.querySelector('#journal-start-date')).toHaveAttribute('type', 'text')
-    expect(container.querySelector('#journal-start-date')).toHaveAttribute('placeholder', 'YYYY/MM/DD')
+    expect(container.querySelector('#journal-start-date')).toHaveAttribute('placeholder', '开始日期')
     expect(container.querySelector('#journal-start-date')).toHaveAttribute('readonly')
     expect(container.querySelector('#journal-end-date')).toHaveAttribute('type', 'text')
-    expect(container.querySelector('#journal-end-date')).toHaveAttribute('placeholder', 'YYYY/MM/DD')
+    expect(container.querySelector('#journal-end-date')).toHaveAttribute('placeholder', '结束日期')
     expect(container.querySelector('#journal-end-date')).toHaveAttribute('readonly')
+    expect(container.querySelector('.journal-date-range-field')?.textContent).not.toContain('开始日期')
+    expect(container.querySelector('.journal-date-range-field')?.textContent).not.toContain('结束日期')
     await user.click(screen.getByLabelText('开始日期'))
-    expect(screen.getByRole('dialog', { name: '选择日记日期范围' })).toBeInTheDocument()
+    const pickerDialog = screen.getByRole('dialog', { name: '选择日记日期范围' })
+    expect(pickerDialog).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '上星期' })).toBeInTheDocument()
     expect(screen.getAllByText(/2026年/)).not.toHaveLength(0)
     const historyRequestsBeforeDraftEdit = apiFetchMock.mock.calls.filter(([url]) => (
       typeof url === 'string' && url.startsWith('/api/notes/journal?')
     )).length
-    await user.type(screen.getByPlaceholderText('开始日期'), '2026/06/01')
+    await user.type(within(pickerDialog).getByPlaceholderText('开始日期'), '2026/06/01')
     expect(apiFetchMock.mock.calls.filter(([url]) => (
       typeof url === 'string' && url.startsWith('/api/notes/journal?')
     ))).toHaveLength(historyRequestsBeforeDraftEdit)
