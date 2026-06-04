@@ -253,8 +253,8 @@ export function JournalNotesActions({
               placeholder={DATE_DISPLAY_PLACEHOLDER}
               className="journal-date-input"
               value={formatDateForInput(startDate)}
+              readOnly
               onFocus={openPanel}
-              onChange={event => onStartDateChange(normalizeDateInput(event.target.value, endDate || today()))}
             />
           </div>
 
@@ -271,8 +271,8 @@ export function JournalNotesActions({
               placeholder={DATE_DISPLAY_PLACEHOLDER}
               className="journal-date-input"
               value={formatDateForInput(endDate)}
+              readOnly
               onFocus={openPanel}
-              onChange={event => onEndDateChange(normalizeDateInput(event.target.value, today()))}
             />
           </div>
         </div>

@@ -193,12 +193,25 @@ describe('LearningJournalPage diary view', () => {
     expect(container.querySelector('.journal-date-range-field')).not.toBeNull()
     expect(container.querySelector('#journal-start-date')).toHaveAttribute('type', 'text')
     expect(container.querySelector('#journal-start-date')).toHaveAttribute('placeholder', 'YYYY/MM/DD')
+    expect(container.querySelector('#journal-start-date')).toHaveAttribute('readonly')
     expect(container.querySelector('#journal-end-date')).toHaveAttribute('type', 'text')
     expect(container.querySelector('#journal-end-date')).toHaveAttribute('placeholder', 'YYYY/MM/DD')
+    expect(container.querySelector('#journal-end-date')).toHaveAttribute('readonly')
     await user.click(screen.getByLabelText('开始日期'))
     expect(screen.getByRole('dialog', { name: '选择日记日期范围' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '上星期' })).toBeInTheDocument()
     expect(screen.getAllByText(/2026年/)).not.toHaveLength(0)
+    const historyRequestsBeforeDraftEdit = apiFetchMock.mock.calls.filter(([url]) => (
+      typeof url === 'string' && url.startsWith('/api/notes/journal?')
+    )).length
+    await user.type(screen.getByPlaceholderText('开始日期'), '2026/06/01')
+    expect(apiFetchMock.mock.calls.filter(([url]) => (
+      typeof url === 'string' && url.startsWith('/api/notes/journal?')
+    ))).toHaveLength(historyRequestsBeforeDraftEdit)
+    await user.click(screen.getByRole('button', { name: '好的' }))
+    await waitFor(() => expect(apiFetchMock.mock.calls.filter(([url]) => (
+      typeof url === 'string' && url.startsWith('/api/notes/journal?')
+    )).length).toBeGreaterThan(historyRequestsBeforeDraftEdit))
     expect(container.querySelector('.journal-history-card__preview')?.textContent).toContain('listening practice')
   })
 
