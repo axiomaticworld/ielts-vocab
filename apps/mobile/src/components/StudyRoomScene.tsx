@@ -138,6 +138,7 @@ export function StudyRoomScene({
   const boardContentPaddingTop = clamp(boardHeight * 0.2, 42, 74)
   const boardContentPaddingBottom = clamp(boardHeight * 0.29, 62, 100)
   const boardContentPaddingHorizontal = clamp(boardWidth * 0.15, 32, 46)
+  const boardContentTranslateX = -clamp(boardWidth * 0.035, 7, 11)
   const boardReveal = React.useRef(new Animated.Value(HERO_BOARD_CLOSED_HEIGHT_RATIO)).current
   const boardRevealHeight = boardReveal.interpolate({
     inputRange: [HERO_BOARD_CLOSED_HEIGHT_RATIO, 1],
@@ -239,6 +240,7 @@ export function StudyRoomScene({
             paddingBottom: boardContentPaddingBottom,
             paddingHorizontal: boardContentPaddingHorizontal,
             paddingTop: boardContentPaddingTop,
+            transform: [{ translateX: boardContentTranslateX }],
             width: boardWidth,
           }}>
             <Text style={styles.heroEyebrow}>今日主线</Text>
