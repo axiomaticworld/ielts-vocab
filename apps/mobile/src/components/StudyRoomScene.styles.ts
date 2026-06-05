@@ -49,6 +49,10 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
   },
+  heroBoardContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroButton: {
     alignItems: 'center',
     backgroundColor: 'transparent',

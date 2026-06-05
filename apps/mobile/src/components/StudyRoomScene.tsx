@@ -1,5 +1,6 @@
 import React from 'react'
 import { Animated, Easing, Image, ImageBackground, PanResponder, Pressable, StatusBar, Text, useWindowDimensions, View } from 'react-native'
+import { ArtTextFrame } from './ArtTextFrame'
 import { ScrollNote } from './CompanionDecor'
 import { Card } from './primitives'
 import { Sticker, type StickerKey } from './stickers'
@@ -231,18 +232,20 @@ export function StudyRoomScene({
           <View style={{ height: roomHeight }} />
         </View>
         <Animated.View style={[styles.heroBoard, { height: boardRevealHeight, left: viewportStageLeft + 18, overflow: 'hidden', paddingHorizontal: 0, paddingTop: 0, top: SCENE_BOARD_TOP, width: boardWidth }]}>
-          <Sticker height={boardHeight} keyName="studyHeroBoard" resizeMode="stretch" style={styles.heroBoardArt} width={boardWidth} />
-          <Animated.View style={{
-            alignItems: 'center',
-            height: boardHeight,
-            justifyContent: 'center',
-            opacity: boardContentOpacity,
-            paddingBottom: boardContentPaddingBottom,
-            paddingHorizontal: boardContentPaddingHorizontal,
-            paddingTop: boardContentPaddingTop,
-            transform: [{ translateX: boardContentTranslateX }],
-            width: boardWidth,
-          }}>
+          <ArtTextFrame
+            contentInsets={{
+              bottom: boardContentPaddingBottom,
+              left: boardContentPaddingHorizontal,
+              right: boardContentPaddingHorizontal,
+              top: boardContentPaddingTop,
+            }}
+            contentStyle={[styles.heroBoardContent, { opacity: boardContentOpacity, transform: [{ translateX: boardContentTranslateX }] }]}
+            height={boardHeight}
+            resizeMode="stretch"
+            sticker="studyHeroBoard"
+            testID="home.hero.artTextFrame"
+            width={boardWidth}
+          >
             <Text style={styles.heroEyebrow}>今日主线</Text>
             <Text numberOfLines={2} style={styles.heroTitle}>{heroAction.label}</Text>
             <Text numberOfLines={2} style={styles.heroHint}>{heroAction.hint}</Text>
@@ -253,10 +256,10 @@ export function StudyRoomScene({
                 <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={styles.heroRewardValue}>{heroAction.value}</Text>
               </View>
             </View>
-            <Pressable accessibilityLabel="继续今日学习" accessibilityRole="button" onPress={() => go(heroAction)} style={styles.heroButton} testID="home.hero.continue">
-              <Text style={styles.heroButtonText}>{heroAction.ctaLabel}</Text>
-            </Pressable>
-          </Animated.View>
+          </ArtTextFrame>
+          <Pressable accessibilityLabel="继续今日学习" accessibilityRole="button" onPress={() => go(heroAction)} style={styles.heroButton} testID="home.hero.continue">
+            <Text style={styles.heroButtonText}>{heroAction.ctaLabel}</Text>
+          </Pressable>
         </Animated.View>
         <Sticker height={roomHeight} keyName="studyLoungeRoom" style={[styles.roomSceneArt, { left: viewportStageLeft + (width - roomWidth) / 2, top: roomTop }]} width={roomWidth} />
         <View style={[styles.roomSpeech, { left: viewportStageLeft + 44, top: speechTop + SCENE_SPEECH_TOP_OFFSET }]}>

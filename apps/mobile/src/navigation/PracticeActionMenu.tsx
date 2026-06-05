@@ -1,7 +1,8 @@
 import React from 'react'
-import { Animated, Easing, Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { PRACTICE_MODE_LABELS, type PracticeMode } from '@ielts-vocab/app-core'
 import { loadLearningStats, peekLearningStats } from '../api/learnerApi'
+import { ArtTextFrame } from '../components/ArtTextFrame'
 import { Sticker } from '../components/stickers'
 import type { StickerKey } from '../components/stickers/catalog'
 import { todayMasteredWordsFromStats } from '../lib/learningStats'
@@ -39,6 +40,8 @@ const modeStickerKeys: Record<PracticeMode, StickerKey> = {
 const practiceHeroTutor = require('../assets/stickers/practice-hero-tutor.png')
 const practiceStatRibbon = require('../assets/stickers/practice-stat-ribbon.png')
 const ORBIT_ACTION_WIDTH = 64
+const QUICK_ACTION_CENTER_BOTTOM = 18
+const QUICK_ACTION_ORBIT_BOTTOM = 86
 const TRIANGLE_NODE_SPACING = 88
 const TRIANGLE_ROW_HEIGHT = Math.round((TRIANGLE_NODE_SPACING * Math.sqrt(3)) / 2)
 const TRIANGLE_BASE_ROW_BOTTOM = 0
@@ -186,8 +189,7 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
         testID="practice.quickAction.content"
       >
         <View style={styles.heroScene}>
-          <ImageBackground resizeMode="contain" source={practiceStatRibbon} style={styles.heroRibbon}>
-            <View style={styles.ribbonTextWrap}>
+          <ArtTextFrame contentStyle={styles.ribbonTextWrap} height={107} resizeMode="contain" source={practiceStatRibbon} style={styles.heroRibbon} width={408}>
               <Text numberOfLines={1} style={[styles.ribbonText, styles.ribbonTextPrefix]}>今日掌握</Text>
               <View style={styles.ribbonNumberSlot}>
                 <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={styles.ribbonNumber}>
@@ -195,8 +197,7 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
                 </Text>
               </View>
               <Text numberOfLines={1} style={[styles.ribbonText, styles.ribbonTextSuffix]}>词</Text>
-            </View>
-          </ImageBackground>
+          </ArtTextFrame>
           <Image resizeMode="contain" source={practiceHeroTutor} style={styles.heroTutorCentered} />
           <View style={styles.modePrompt} testID="practice.quickAction.modePrompt">
             <View style={styles.modePromptRule} />
@@ -210,7 +211,7 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
         </View>
       </Animated.View>
 
-      <View pointerEvents="box-none" style={styles.orbitStage}>
+      <View pointerEvents="box-none" style={[styles.orbitStage, { bottom: QUICK_ACTION_ORBIT_BOTTOM }]}>
         <View pointerEvents="none" style={styles.orbitGuide} />
         {shortcutModes.map(mode => (
           <Animated.View key={mode} style={[styles.orbitAction, orbitStyle(mode), modeRevealStyle(mode, reveal)]}>
@@ -230,7 +231,7 @@ export function PracticeActionMenu({ onDismiss, onSelect }: PracticeActionMenuPr
         ))}
       </View>
 
-      <Animated.View style={[styles.centerButton, { transform: [{ translateX: -29 }, { rotate: centerRotate }] }]}>
+      <Animated.View style={[styles.centerButton, { bottom: QUICK_ACTION_CENTER_BOTTOM, transform: [{ translateX: -29 }, { rotate: centerRotate }] }]}>
         <Pressable
           accessibilityLabel="关闭练习快捷菜单"
           accessibilityRole="button"
@@ -265,7 +266,6 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     borderRadius: 29,
     borderWidth: 0,
-    bottom: 0,
     height: 58,
     justifyContent: 'center',
     left: '50%',
@@ -435,7 +435,6 @@ const styles = StyleSheet.create({
     width: 340,
   },
   orbitStage: {
-    bottom: 0,
     height: 430,
     left: 0,
     position: 'absolute',
