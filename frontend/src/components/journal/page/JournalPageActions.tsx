@@ -18,10 +18,10 @@ const RANGE_SHORTCUTS = [
   { label: '上星期', days: 7 },
   { label: '上个月', months: 1 },
   { label: '过去三个月', months: 3 },
-]
+] as const
 
 function formatDateForInput(value: string): string {
-  return value.replaceAll('-', '/')
+  return value.replace(/-/g, '/')
 }
 
 function normalizeDateInput(value: string, max?: string): string {
@@ -29,7 +29,7 @@ function normalizeDateInput(value: string, max?: string): string {
   if (!trimmed) return ''
 
   const match = DATE_INPUT_PATTERN.exec(trimmed)
-  const normalized = match ? `${match[1]}-${match[2]}-${match[3]}` : trimmed.replaceAll('/', '-')
+  const normalized = match ? `${match[1]}-${match[2]}-${match[3]}` : trimmed.replace(/\//g, '-')
   if (max && DATE_INPUT_PATTERN.test(normalized) && normalized > max) return max
   return normalized
 }
@@ -196,7 +196,7 @@ export function JournalNotesActions({
   const handleShortcut = (shortcut: (typeof RANGE_SHORTCUTS)[number]) => {
     const end = today()
     const endDateValue = dateFromISO(end)
-    const startDateValue = shortcut.months
+    const startDateValue = 'months' in shortcut
       ? addMonths(endDateValue, -shortcut.months)
       : addDays(endDateValue, -shortcut.days + 1)
     const nextStart = isoFromDate(startDateValue)
