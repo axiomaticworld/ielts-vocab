@@ -2,6 +2,12 @@
 
 All notable product, runtime, and operational changes are recorded here.
 
+## [Unreleased]
+
+### Documentation
+- Migrated `docs/project-docs.manifest.json` to the version 2 zero-context onboarding contract with real entrypoints, commands, environment metadata, workspace contracts, current work, troubleshooting, decisions, ownership, and dated verification evidence.
+- Added zero-context handoff governance to `TODO.md`, including the completed migration and the ongoing freshness contract.
+
 ## [1.2.6] - 2026-06-01
 
 ### Fixed

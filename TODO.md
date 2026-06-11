@@ -99,3 +99,25 @@ Last updated: 2026-04-12 11:18:00 +08:00
 - **Owner**: solo owner
 - **Status**: deferred; requires owner sign-off.
 - **Test case**: not yet defined.
+
+## Zero-context handoff governance
+
+### Completed migration
+
+- **Problem**: The project documentation manifest did not provide enough structured context for a new contributor to identify entrypoints, commands, environment contracts, current work, troubleshooting, decisions, or verification evidence.
+- **Solution**: Migrated `docs/project-docs.manifest.json` to version 2 and aligned it with the actual product, split-runtime, documentation, and workspace contracts.
+- **Expected result**: A contributor can start from the manifest, follow the declared read order, locate the real entrypoints, and choose a safe setup, health, verification, or smoke command without rediscovery.
+- **Acceptance**: The manifest parses as JSON, contains every required v2 field, references existing local paths, contains no secret values, and records fresh safe-smoke evidence dated `2026-06-11`.
+- **Evidence**: `docs/project-docs.manifest.json`; `CHANGELOG.md`; fresh manifest/path validation and `pnpm --dir frontend verify:repo-guards` output.
+- **Dependencies**: `AGENTS.md`, `README.md`, `INDEX.md`, `PRD.md`, `TDD.md`, `MILESTONE.md`, workspace relationship graph.
+- **Status**: Completed on 2026-06-11.
+
+### Ongoing freshness
+
+- **Problem**: Runtime topology, current work, environment variables, contracts, and verification commands can drift as the product evolves.
+- **Solution**: Review the v2 manifest whenever an entrypoint, service, required variable, contract, milestone, TODO priority, or verification command changes.
+- **Expected result**: Zero-context onboarding remains accurate for the current checkout rather than becoming a one-time snapshot.
+- **Acceptance**: Each material onboarding change updates the manifest, TODO status, and changelog together; verification remains `verified` only when the recorded commands have fresh evidence.
+- **Evidence**: Future diffs in `docs/project-docs.manifest.json`, `TODO.md`, and `CHANGELOG.md`, plus dated verification evidence.
+- **Dependencies**: Maintainers and agents completing the existing documentation update discipline.
+- **Status**: Ongoing.

@@ -1,27 +1,209 @@
 {
-  "version": 1,
+  "version": 2,
   "project": "ielts-vocab",
-  "status": "partial",
-  "documents": {
-    "readme": "README.md",
-    "agents": "AGENTS.md",
-    "changelog": "CHANGELOG.md",
+  "name": "IELTS Vocabulary",
+  "status": "verified",
+  "canonicalPath": "/Volumes/code/workspace/products/ielts-vocab",
+  "kind": "product",
+  "lifecycle": "active",
+  "owner": "AxiomaticWorld solo owner",
+  "summary": "Full-stack IELTS vocabulary learning product with web, mobile, shared client packages, gateway, split backend services, speech, and production operations.",
+  "readOrder": [
+    "AGENTS.md",
+    "README.md",
+    "INDEX.md",
+    "PRD.md",
+    "TDD.md"
+  ],
+  "entrypoints": [
+    {
+      "id": "web",
+      "path": "frontend/src/app",
+      "purpose": "React web routes and application providers."
+    },
+    {
+      "id": "mobile",
+      "path": "apps/mobile",
+      "purpose": "React Native mobile client."
+    },
+    {
+      "id": "gateway",
+      "path": "apps/gateway-bff",
+      "purpose": "Canonical browser API ingress for the split runtime."
+    },
+    {
+      "id": "backend-compat",
+      "path": "backend/app.py",
+      "purpose": "Compatibility monolith entrypoint retained for migration and rollback."
+    },
+    {
+      "id": "split-services",
+      "path": "services",
+      "purpose": "Service-owned runtime entrypoints for identity, learning, catalog, AI, notes, TTS, ASR, and admin operations."
+    },
+    {
+      "id": "local-runtime",
+      "path": "start-project.sh",
+      "purpose": "Production-style local startup with readiness checks."
+    }
+  ],
+  "commands": {
+    "setup": [
+      "./scripts/setup-mac-runtime.sh && pnpm install"
+    ],
+    "start": [
+      "./start-project.sh"
+    ],
+    "health": [
+      "curl --fail http://127.0.0.1:8000/health"
+    ],
+    "verify": [
+      "pnpm --dir frontend verify:repo-guards"
+    ],
+    "smoke": [
+      "pnpm --dir frontend verify:repo-guards"
+    ]
+  },
+  "environment": {
+    "runtimes": [
+      "Node.js",
+      "pnpm 9",
+      "Python",
+      "PostgreSQL"
+    ],
+    "services": [
+      "Redis",
+      "RabbitMQ",
+      "gateway-bff",
+      "split backend services",
+      "ASR Socket.IO"
+    ],
+    "variables": [
+      {
+        "name": "POSTGRES_HOST",
+        "required": true,
+        "secret": false,
+        "source": "backend/.env.microservices.local.example"
+      },
+      {
+        "name": "REDIS_HOST",
+        "required": true,
+        "secret": false,
+        "source": "backend/.env.microservices.local.example"
+      },
+      {
+        "name": "RABBITMQ_HOST",
+        "required": true,
+        "secret": false,
+        "source": "backend/.env.microservices.local.example"
+      },
+      {
+        "name": "RABBITMQ_USER",
+        "required": true,
+        "secret": false,
+        "source": "backend/.env.microservices.local.example"
+      },
+      {
+        "name": "RABBITMQ_PASSWORD",
+        "required": true,
+        "secret": true,
+        "source": "local untracked environment file"
+      },
+      {
+        "name": "WECHAT_MOBILE_APP_SECRET",
+        "required": false,
+        "secret": true,
+        "source": "local untracked environment file"
+      },
+      {
+        "name": "STAR_SERVICE_DATABASE_URL",
+        "required": true,
+        "secret": true,
+        "source": "local untracked environment file; names are documented in backend/.env.microservices.local.example"
+      }
+    ]
+  },
+  "contracts": {
+    "provides": [
+      "ielts-learning-app",
+      "upload-asr-api",
+      "realtime-asr-socket",
+      "tts-backend"
+    ],
+    "consumes": [
+      "ai-capability",
+      "minimax-tokenplan",
+      "ollama-local"
+    ],
+    "files": [
+      "AGENTS.md",
+      "packages/platform-sdk/platform_sdk/asr_runtime",
+      "backend/services/asr_service.py",
+      "services/asr-service/main.py"
+    ]
+  },
+  "currentWork": {
     "todo": "TODO.md",
     "milestone": "MILESTONE.md",
-    "prd": "docs/PRD.md",
-    "tdd": "docs/TDD.md",
-    "memory": "docs/MEMORY.md",
-    "adr": "docs/ADR",
+    "active": [
+      "Keep the deployed split backend stable.",
+      "Complete final remote release, preflight, smoke, bounded storage drill, and closeout documentation."
+    ],
+    "knownFailures": [
+      "Final remote release and bounded storage drill remain outstanding.",
+      "Visual regression coverage for frontend components is not yet established."
+    ]
+  },
+  "troubleshooting": [
+    {
+      "symptom": "Browser API or page startup fails locally.",
+      "diagnosis": "Check the canonical chain at frontend preview :3002, gateway-bff :8000, split services :8101-8108, and ASR Socket.IO :5001.",
+      "resolution": "Run ./start-project.sh and inspect its readiness output and runtime logs before falling back to compatibility mode."
+    },
+    {
+      "symptom": "Internal service requests fail only when a proxy is configured.",
+      "diagnosis": "Ambient HTTP_PROXY or HTTPS_PROXY may be leaking into local service traffic.",
+      "resolution": "Run the internal-client proxy regression tests and keep loopback service clients on the no-proxy path."
+    }
+  ],
+  "decisions": {
+    "adr": "",
+    "changelog": "CHANGELOG.md",
+    "submitLog": "docs/logs/submit"
+  },
+  "documents": {
+    "readme": "README.md",
+    "readmeZh": "README.zh-CN.md",
+    "agents": "AGENTS.md",
+    "index": "INDEX.md",
+    "prd": "PRD.md",
+    "tdd": "TDD.md",
+    "todo": "TODO.md",
+    "milestone": "MILESTONE.md",
+    "changelog": "CHANGELOG.md",
+    "security": "SECURITY.md",
+    "debug": "DEBUG.md",
+    "testReport": "TEST_REPORT.md",
     "manifest": "docs/project-docs.manifest.json"
   },
   "owners": {
-    "docsAgent": "control-plane AgentTask",
-    "memoryPlane": "base_service"
+    "product": "AxiomaticWorld solo owner",
+    "documentation": "project owner and contributing agents",
+    "verification": "contributing agent"
   },
   "verification": {
-    "docs": "manifest JSON parse + required file existence"
+    "status": "verified",
+    "lastVerifiedAt": "2026-06-11",
+    "commands": [
+      "pnpm --dir frontend verify:repo-guards"
+    ],
+    "evidence": [
+      "Manifest v2 JSON and referenced-path validation passed on 2026-06-11.",
+      "pnpm --dir frontend verify:repo-guards passed on 2026-06-11: file-line, game-template, design-token, style-discipline, and lint checks were green."
+    ]
   },
   "created": "2026-06-07",
-  "writer": "workspace-docs-gap-audit-A1",
-  "source": "audit:docs/audit/workspace-docs-gap-audit-2026-06-07.md"
+  "updated": "2026-06-11",
+  "writer": "Codex",
+  "source": "user-authorized zero-context onboarding migration"
 }
