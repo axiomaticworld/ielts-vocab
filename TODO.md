@@ -26,3 +26,76 @@ Last updated: 2026-04-12 11:18:00 +08:00
 - [已完成] 完成 Wave 6B，`start-project`、Vite dev/preview 代理、Playwright 默认入口、`nginx` 示例和运行文档已统一切到 `gateway-bff :8000 -> services` 的 canonical split runtime contract。
 - [已完成] 完成 Wave 6C：browser cutover 默认只看 `gateway-bff` browser surface，route coverage 已锁到 `94/94`，远端 cutover smoke 与本地 rollback drill 都已实跑通过；剩余 `tts-admin` 五条路由已正式冻结为 rollback-only operator surface，不再作为 browser ingress 或 split-runtime 补齐目标。
 - [已完成] 将最新 `dev`（含 Wave 5 worker-aware deploy contract）合并到 `main` 并重新部署生产，当前 `https://axiomaticworld.com/` 核心 smoke 正常。
+
+---
+
+# Prioritized Task List (P0 / P1 / P2)
+
+> This section is a structured overlay on top of the narrative above. The
+> narrative is preserved as the daily working log; this overlay is the
+> machine-readable counterpart that the deep-init-pro documentation standard
+> requires. Each P0/P1 item has a requirement ID (`REQ-IELTS-...`) and at
+> least one test case.
+
+## P0 — Must ship before final closeout
+
+### REQ-IELTS-P0-001 — Final remote release / deploy / preflight / smoke / bounded storage drill
+- **Owner**: solo owner
+- **Source AC**: `PRD-AC-005`, `PRD-AC-006`, `PRD-AC-007`
+- **Test case**: run `pnpm --dir frontend verify:repo-guards`, `bash apps/mobile/scripts/run-maestro-e2e.sh smoke`, then on remote `119.29.182.134` run `run-wave5-projection-cutover.py --verify-only` and the bounded storage drill; expected output: all gates green and storage drill report archived to `docs/logs/submit/`.
+- **Evidence**: `docs/logs/submit/<release-timestamp>-*.md`; `CHANGELOG.md` entry for the release.
+
+### REQ-IELTS-P0-002 — Lock feature-wish tickets to the release that ships them
+- **Owner**: solo owner
+- **Source AC**: `PRD-AC-007`
+- **Test case**: for each `feature_wish` opened in the release window, verify a release-closeout ticket reference in `CHANGELOG.md` under the matching version; expected output: zero open feature-wish tickets without a release linkage.
+- **Evidence**: `CHANGELOG.md` Operations block + ticket board snapshot.
+
+### REQ-IELTS-P0-003 — Strict split runtime boundary remains `503 strict-internal-contract` (no silent shared fallback)
+- **Owner**: solo owner
+- **Source AC**: `PRD-AC-004`
+- **Test case**: `python -m pytest -q backend/tests/test_strict_internal_contract_boundary.py backend/tests/test_admin_projection_bootstrap.py`; expected: all pass and zero `transitional_tables` reported by the table-boundary audit.
+- **Evidence**: pytest output + `docs/audits/` table-boundary audit.
+
+## P1 — Should ship in the next release window
+
+### REQ-IELTS-P1-001 — Listening-choice distractors stay confusable
+- **Owner**: solo owner
+- **Source AC**: `PRD-AC-002`
+- **Test case**: `python -m pytest -q backend/tests/test_listening_choice_distractors.py`; expected: every distractor is sound-alike or spelling-alike, never inflection-only.
+- **Evidence**: pytest output; covered in `CHANGELOG 1.2.6`.
+
+### REQ-IELTS-P1-002 — Word-audio cache fallback through gateway + TTS media paths
+- **Owner**: solo owner
+- **Source AC**: `PRD-AC-003`
+- **Test case**: when canonical word audio is missing, the gateway must fall back to the TTS-media cache without blocking quick recall; test: `backend/tests/test_word_audio_fallback.py`.
+- **Evidence**: pytest output; covered in `CHANGELOG 1.2.6`.
+
+### REQ-IELTS-P1-003 — Internal service clients stay off ambient proxy
+- **Owner**: solo owner
+- **Source AC**: `PRD-AC-005`
+- **Test case**: with `HTTP_PROXY` / `HTTPS_PROXY` set to a non-local value, internal service calls still resolve to `127.0.0.1`; test: `backend/tests/test_internal_clients_ignore_ambient_proxy.py`.
+- **Evidence**: pytest output; covered in `CHANGELOG 1.2.6`.
+
+### REQ-IELTS-P1-004 — `tts-admin` 5 routes stay rollback-only
+- **Owner**: solo owner
+- **Source AC**: `PRD-AC-006`
+- **Test case**: `backend/tests/test_tts_admin_rollback_only.py` confirms the 5 routes are not in the browser cutover set; expected: 0 routes in browser cutover.
+- **Evidence**: pytest output; `MILESTONE.md` Wave 6C note.
+
+## P2 — Future hardening
+
+### REQ-IELTS-P2-001 — Visual regression for `frontend/src/components/`
+- **Owner**: solo owner
+- **Status**: not started; no snapshot framework adopted.
+- **Test case**: add a storybook + visual diff harness; currently blocked on framework choice.
+
+### REQ-IELTS-P2-002 — Daily summary export to PDF
+- **Owner**: solo owner
+- **Status**: not started; currently Markdown-only.
+- **Test case**: export to PDF and verify the layout matches the Markdown version.
+
+### REQ-IELTS-P2-003 — Promote `tts-admin` out of rollback-only
+- **Owner**: solo owner
+- **Status**: deferred; requires owner sign-off.
+- **Test case**: not yet defined.
