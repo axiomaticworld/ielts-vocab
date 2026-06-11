@@ -1,6 +1,6 @@
-# Milestones
+# Milestone
 
-Use this folder for cross-feature checkpoints that summarize meaningful delivery milestones.
+Use this folder for cross-feature checkpoints that summarize meaningful delivery milestone.
 
 A milestone should answer:
 
@@ -15,7 +15,7 @@ A milestone should answer:
 - a platform capability is connected across multiple surfaces
 - a large cleanup or architecture reshaping pass meaningfully changes the repo
 
-Do not use milestones for single small fixes or append-only logs.
+Do not use milestone for single small fixes or append-only logs.
 
 ## Template
 

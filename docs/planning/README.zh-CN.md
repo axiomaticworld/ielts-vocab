@@ -18,5 +18,5 @@
 - 计划应具有时间边界且可执行。
 - 产品基线文档应聚焦于用户问题、范围、用户旅程与成功指标。
 - 持久化的技术原理应迁移至 `docs/architecture/specs/`。
-- 当计划已完成且其成果对多个发布版本具有价值时，请在 `docs/milestones/` 中新增或更新里程碑。
+- 当计划已完成且其成果对多个发布版本具有价值时，请在 `docs/milestone/` 中新增或更新里程碑。
 - 新的工程推进计划应基于 `implementation/templates/implementation-plan-template.md` 模板开始。

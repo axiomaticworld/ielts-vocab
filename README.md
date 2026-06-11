@@ -54,7 +54,7 @@ backend/
 docs/
 - architecture/             # 架构说明与设计文档
 - governance/               # UI / 产品治理记录
-- milestones/               # 里程碑文档
+- milestone/               # 里程碑文档
 - operations/               # 运维与工具文档
 - planning/                 # 计划文档
 - logs/submit/              # 提交批次日志

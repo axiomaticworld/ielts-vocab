@@ -27,7 +27,7 @@ The project crossed from a set of mostly finished pages into a more connected le
 
 - Added repository-wide text integrity checks for source and docs files.
 - Normalized editing guidance for patching and encoding-sensitive work.
-- Reorganized `docs/` into architecture, governance, operations, planning, milestones, and logs.
+- Reorganized `docs/` into architecture, governance, operations, planning, milestone, and logs.
 
 ## Why It Matters
 

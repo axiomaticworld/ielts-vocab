@@ -51,7 +51,7 @@ Last updated: 2026-06-08
 - Local run, deployment, proxy chain, drill, and rollback recipes
 - Includes `nginx.conf.example` walkthrough and the production-like local proxy chain
 
-## Milestones (under `docs/milestones/`)
+## Milestone (under `docs/milestone/`)
 
 - Per-milestone evidence, decisions, and drills
 - Currently archived under Wave 1-6 historical entries

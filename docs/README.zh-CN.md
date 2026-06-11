@@ -15,7 +15,7 @@ docs/
   - audits/                        # 架构与风险审计
   - specs/                         # 技术设计规范
 - governance/                      # 产品与 UI 治理日志
-- milestones/                      # 跨发布里程碑与完成快照
+- milestone/                      # 跨发布里程碑与完成快照
 - operations/                      # 工具、自动化与运维运行手册
 - planning/
   - implementation/                # 具体实施计划
@@ -32,7 +32,7 @@ docs/
 - 工具配置与运维运行手册放入 `operations/`。
 - 产品需求基线、阶段性功能规划与上线检查表放入 `planning/`。
 - 治理历史与跨领域 UI 清理日志放入 `governance/`。
-- 跨功能交付检查点与发布快照放入 `milestones/`。
+- 跨功能交付检查点与发布快照放入 `milestone/`。
 - 当根 TODO 中某条目需要独立检查表时，将其子级任务分解放入 `todo/`。
 - 仅追加的执行记录放入 `logs/submit/`。
 
@@ -58,9 +58,9 @@ docs/
 
 ### 里程碑
 
-- [README.md](./milestones/README.md)
-- [2026-q1-platform-foundation.md](./milestones/2026-q1-platform-foundation.md)
-- [milestone-template.md](./milestones/templates/milestone-template.md)
+- [README.md](./milestone/README.md)
+- [2026-q1-platform-foundation.md](./milestone/2026-q1-platform-foundation.md)
+- [milestone-template.md](./milestone/templates/milestone-template.md)
 
 ### 运维
 

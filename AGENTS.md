@@ -195,7 +195,7 @@ services/
 docs/
 - architecture/             # Specs and audits
 - governance/               # Product and UI governance logs
-- milestones/               # Durable delivery snapshots
+- milestone/               # Durable delivery snapshots
 - operations/               # Runbooks and operator docs
 - planning/                 # Design and implementation plans
 - logs/submit/              # Append-only submit records

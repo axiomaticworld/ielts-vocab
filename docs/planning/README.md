@@ -18,5 +18,5 @@ Use this folder for product and execution-oriented plans.
 - Keep plans time-bounded and actionable.
 - Keep product baseline docs focused on user problems, scope, journeys, and success metrics.
 - Move durable technical rationale into `docs/architecture/specs/`.
-- When a plan has been completed and the outcome matters across releases, add or update a milestone in `docs/milestones/`.
+- When a plan has been completed and the outcome matters across releases, add or update a milestone in `docs/milestone/`.
 - Start new engineering rollout plans from `implementation/templates/implementation-plan-template.md`.

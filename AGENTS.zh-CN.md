@@ -195,7 +195,7 @@ services/
 docs/
 - architecture/             # 规范与审计
 - governance/               # 产品与 UI 治理日志
-- milestones/               # 可持久化的交付快照
+- milestone/               # 可持久化的交付快照
 - operations/               # runbook 与运维文档
 - planning/                 # 设计与实施计划
 - logs/submit/              # append-only 提交记录
