@@ -36,7 +36,7 @@ done
 setup_script="${root}/scripts/setup-mac-runtime.sh"
 backend_env="${root}/backend/.env"
 microservices_env="${root}/backend/.env.microservices.local"
-runtime_dir="${root}/logs/runtime/microservices-mac"
+runtime_dir="${root}/logs/runtime/app-services-mac"
 postgres_script="${root}/scripts/start-local-postgres-microservices.sh"
 redis_script="${root}/scripts/start-local-redis-microservices.sh"
 rabbit_script="${root}/scripts/start-local-rabbitmq-microservices.sh"
@@ -82,7 +82,7 @@ replaced_worker_names=(
 )
 
 log() {
-  printf '[microservices-mac] %s\n' "$1"
+  printf '[app-services-mac] %s\n' "$1"
 }
 
 require_command() {
