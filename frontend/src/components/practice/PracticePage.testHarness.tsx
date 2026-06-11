@@ -9,6 +9,11 @@ import { STORAGE_KEYS } from '../../constants'
 export const apiFetchMock = vi.fn()
 export const startSessionMock = vi.fn().mockResolvedValue(null)
 export const fetchMock = vi.fn()
+export const useAIChatMock = vi.fn(() => ({
+  sendMessage: vi.fn(),
+  openPanel: vi.fn(),
+  closePanel: vi.fn(),
+}))
 
 vi.stubGlobal('fetch', fetchMock)
 
