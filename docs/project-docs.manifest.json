@@ -184,7 +184,8 @@
     "security": "SECURITY.md",
     "debug": "DEBUG.md",
     "testReport": "TEST_REPORT.md",
-    "manifest": "docs/project-docs.manifest.json"
+    "manifest": "docs/project-docs.manifest.json",
+    "verification": "VERIFICATION.md"
   },
   "owners": {
     "product": "AxiomaticWorld solo owner",
