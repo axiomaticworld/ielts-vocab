@@ -13,16 +13,16 @@ Last updated: 2026-06-08
 | `README.md` | English project entrypoint, layout, run/verify commands | owner | when scope changes |
 | `README.zh-CN.md` | Simplified Chinese counterpart of `README.md` | owner | synced with README |
 | `AGENTS.md` | Root agent rules, boundaries, verification, doc read order | owner + control-plane | when rules change |
-| `CHANGELOG.md` | Keep-a-Changelog style release history | owner | every release |
-| `TODO.md` | P0/P1/P2 task list with requirement IDs and test cases | owner + control-plane | weekly |
-| `MILESTONE.md` | Evidence-backed milestone status snapshot | owner | per milestone close |
-| `MILESTONE.md` | Long-form Wave history (Wave 1-6+); supplemental to `MILESTONE.md` | owner | per Wave close |
-| `PRD.md` | Product requirements, users, acceptance criteria, non-goals | owner | when scope changes |
-| `TDD.md` | Test/technical design, architecture assumptions, verification commands | owner + test-engineer | when test strategy changes |
+| `docs/state/CHANGELOG.md` | Keep-a-Changelog style release history | owner | every release |
+| `docs/state/TODO.md` | P0/P1/P2 task list with requirement IDs and test cases | owner + control-plane | weekly |
+| `docs/state/MILESTONE.md` | Evidence-backed milestone status snapshot | owner | per milestone close |
+| `docs/milestone/` | Long-form Wave history (Wave 1-6+); supplemental to `docs/state/MILESTONE.md` | owner | per Wave close |
+| `docs/state/PRD.md` | Product requirements, users, acceptance criteria, non-goals | owner | when scope changes |
+| `docs/state/TDD.md` | Test/technical design, architecture assumptions, verification commands | owner + test-engineer | when test strategy changes |
 | `INDEX.md` | This file | owner | when document map changes |
-| `SECURITY.md` | Private operator channel, secret-handling policy | owner | on policy change |
-| `DEBUG.md` | Common debugging recipes (proxy, ASR, gateway, TTS) | owner | as needed |
-| `TEST_REPORT.md` | Latest test run summary | control-plane | per CI run |
+| `docs/governance/SECURITY.md` | Private operator channel, secret-handling policy | owner | on policy change |
+| `docs/state/DEBUG.md` | Common debugging recipes (proxy, ASR, gateway, TTS) | owner | as needed |
+| `docs/state/TEST_REPORT.md` | Latest test run summary | control-plane | per CI run |
 
 ## Architecture (under `docs/architecture/`)
 
@@ -34,17 +34,19 @@ Last updated: 2026-06-08
 - `frontend-boundaries.md` — Web / mobile / admin client boundaries
 - `multi-client-monorepo.md` — Web + mobile + admin client split
 - `audits/` — periodic audits (table boundary, strict contract, etc.)
+- `specs/realtime_waveform.md` (en mirror: `realtime_waveform.en.md`) — realtime waveform UI technical doc
 
 ## Governance (under `docs/governance/`)
 
 - UI / product governance records
 - Authority, ownership, and contribution rules
 - Read first when changing UX, product surface, or contributor policy
+- `docs/governance/SECURITY.md` (en mirror: `docs/governance/SECURITY.zh-CN.md`) — security policy
 
 ## Planning (under `docs/planning/`)
 
 - Roadmap and forward-looking plans
-- Should be read alongside `MILESTONE.md` and `TODO.md`
+- Should be read alongside `docs/state/MILESTONE.md` and `docs/state/TODO.md`
 
 ## Operations (under `docs/operations/`)
 
@@ -109,14 +111,14 @@ Last updated: 2026-06-08
 ## Source-of-truth resolution order
 
 1. `README.md` and `README.zh-CN.md` for entrypoint narrative.
-2. `PRD.md` for product scope; `TDD.md` for technical design and verification.
+2. `docs/state/PRD.md` for product scope; `docs/state/TDD.md` for technical design and verification.
 3. `AGENTS.md` for agent rules and edit boundaries.
-4. `MILESTONE.md` for current status; `MILESTONE.md` for historical Wave detail.
-5. `TODO.md` for active work; `CHANGELOG.md` for shipped history.
+4. `docs/state/MILESTONE.md` for current status; `docs/milestone/` for historical Wave detail.
+5. `docs/state/TODO.md` for active work; `docs/state/CHANGELOG.md` for shipped history.
 6. `docs/architecture/*` for deep design; `docs/operations/*` for run/ops; `docs/governance/*` for policy.
 
 ## Update discipline
 
 - Update `INDEX.md` whenever a new top-level document is added or its owner changes.
 - Update `project-docs.manifest.json` alongside `INDEX.md` so machine-readable consumers stay aligned.
-- Every material change in this index should be reflected in `CHANGELOG.md` if the change is user-visible.
+- Every material change in this index should be reflected in `docs/state/CHANGELOG.md` if the change is user-visible.
