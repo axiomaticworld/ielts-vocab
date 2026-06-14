@@ -8,6 +8,14 @@ function isEditableShortcutTarget(target: EventTarget | null) {
   return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select'
 }
 
+function shortcutOptionIndex(event: KeyboardEvent) {
+  if (/^[1-4]$/.test(event.key)) return Number(event.key) - 1
+  if (/^(Digit|Numpad)[1-4]$/.test(event.code)) {
+    return Number(event.code.at(-1)) - 1
+  }
+  return null
+}
+
 function ResultScreen({
   result,
   onRestart,
@@ -94,18 +102,20 @@ export default function VocabTestPage() {
     if (loading || error || showResult || !currentQuestion || selected !== null) return
 
     function handleKeyDown(event: KeyboardEvent) {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.repeat) return
       if (isEditableShortcutTarget(event.target)) return
 
-      const optionIndex = Number(event.key) - 1
-      if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex > 2) return
+      const optionIndex = shortcutOptionIndex(event)
+      if (optionIndex == null) return
       if (optionIndex >= currentQuestion.options.length) return
 
       event.preventDefault()
+      event.stopPropagation()
       handleOptionSelect(optionIndex)
     }
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
   }, [currentQuestion, error, handleOptionSelect, loading, selected, showResult])
 
   if (loading) {
