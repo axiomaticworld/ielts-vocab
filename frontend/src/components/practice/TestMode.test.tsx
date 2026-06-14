@@ -1,5 +1,5 @@
 import React from 'react'
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { vi } from 'vitest'
 import TestMode from './TestMode'
 import type { AppSettings, Word } from './types'
@@ -191,6 +191,66 @@ describe('TestMode', () => {
       source: 'quickmemory',
       sourceMode: 'test',
     })
+  })
+
+  it('selects test-mode choices with numeric shortcuts only while unanswered', async () => {
+    const { onWrongWord } = renderTestMode()
+    completeInitialAudio()
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: '1', code: 'Digit1' })
+      await Promise.resolve()
+    })
+
+    expect(screen.getByText('✓ 认识')).toBeInTheDocument()
+    expect(screen.getByText('within')).toBeInTheDocument()
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: '3', code: 'Digit3' })
+      await Promise.resolve()
+    })
+
+    expect(screen.getByText('✓ 认识')).toBeInTheDocument()
+    expect(onWrongWord).not.toHaveBeenCalled()
+  })
+
+  it('ignores numeric shortcuts from editable targets in test mode', async () => {
+    const { onWrongWord } = renderTestMode()
+    completeInitialAudio()
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+
+    await act(async () => {
+      fireEvent.keyDown(input, { key: '3', code: 'Digit3' })
+      await Promise.resolve()
+    })
+
+    expect(screen.getByRole('button', { name: '不认识' })).toBeEnabled()
+    expect(screen.queryByText('✗ 不认识')).toBeNull()
+    expect(onWrongWord).not.toHaveBeenCalled()
+    input.remove()
+  })
+
+  it('keeps shortcuts aligned after the known choice expires in test mode', async () => {
+    const { onWrongWord } = renderTestMode()
+    completeInitialAudio()
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(2500) })
+    expect(screen.queryByRole('button', { name: '认识' })).toBeNull()
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: '1', code: 'Digit1' })
+      await Promise.resolve()
+    })
+    expect(screen.queryByText('✓ 认识')).toBeNull()
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Unidentified', code: 'Numpad3' })
+      await Promise.resolve()
+    })
+
+    expect(screen.getByText('✗ 不认识')).toBeInTheDocument()
+    expect(onWrongWord).toHaveBeenCalledWith(vocabulary[0])
   })
 
   it('shows the reveal UI after one known click while session start is pending', async () => {

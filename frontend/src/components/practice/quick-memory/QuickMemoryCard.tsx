@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import type { QuickMemoryModeVariant } from '../../../features/practice/quickMemorySession'
 import type { Word } from '../types'
 import { QuickMemoryCountdownRing } from './QuickMemoryCountdownRing'
@@ -70,6 +70,18 @@ function SpeakerIcon() {
   )
 }
 
+function isEditableShortcutTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  const tagName = target.tagName.toLowerCase()
+  return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select'
+}
+
+function numericShortcutIndex(event: KeyboardEvent) {
+  if (/^[1-3]$/.test(event.key)) return Number(event.key) - 1
+  if (/^(Digit|Numpad)[1-3]$/.test(event.code)) return Number(event.code.at(-1)) - 1
+  return null
+}
+
 export function QuickMemoryCard({
   modeVariant,
   phase,
@@ -95,6 +107,29 @@ export function QuickMemoryCard({
   onNext,
 }: QuickMemoryCardProps) {
   const isTestMode = modeVariant === 'test'
+  useEffect(() => {
+    if (!isTestMode || phase !== 'question' || !questionReady) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.repeat) return
+      if (isEditableShortcutTarget(event.target)) return
+
+      const index = numericShortcutIndex(event)
+      if (index == null) return
+      if (index === 0 && !knownChoiceAvailable) return
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      if (index === 0) onKnown()
+      if (index === 1) onFamiliar()
+      if (index === 2) onUnknown()
+    }
+
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [isTestMode, knownChoiceAvailable, onFamiliar, onKnown, onUnknown, phase, questionReady])
+
   const resultLabel = choice === 'known'
     ? '✓ 认识'
     : wasFuzzy && isTestMode
