@@ -222,6 +222,7 @@ def test_known_premium_phonetic_regressions_stay_fixed():
         'arising': '/əˈraɪzɪŋ/',
         'button': '/ˈbʌtən/',
         'elementary': '/ˌelɪˈmentəri/',
+        'garden': '/ˈɡɑːd(ə)n/',
         'herbs': '/hɜːbz/',
         'history': '/ˈhɪstəri/',
         'increases': '/ɪnˈkriːsɪz/',

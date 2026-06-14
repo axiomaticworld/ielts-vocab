@@ -1,5 +1,12 @@
+import { useEffect } from 'react'
 import { PageSkeleton } from '../../ui'
 import { useVocabTestPage } from '../../../composables/vocab-test/page/useVocabTestPage'
+
+function isEditableShortcutTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  const tagName = target.tagName.toLowerCase()
+  return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select'
+}
 
 function ResultScreen({
   result,
@@ -82,6 +89,24 @@ export default function VocabTestPage() {
     handleOptionSelect,
     replayCurrentQuestion,
   } = useVocabTestPage()
+
+  useEffect(() => {
+    if (loading || error || showResult || !currentQuestion || selected !== null) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (isEditableShortcutTarget(event.target)) return
+
+      const optionIndex = Number(event.key) - 1
+      if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex > 2) return
+      if (optionIndex >= currentQuestion.options.length) return
+
+      event.preventDefault()
+      handleOptionSelect(optionIndex)
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [currentQuestion, error, handleOptionSelect, loading, selected, showResult])
 
   if (loading) {
     return (
