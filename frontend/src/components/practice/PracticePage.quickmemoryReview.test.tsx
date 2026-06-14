@@ -18,6 +18,14 @@ const useFavoriteWordsMock = vi.fn(() => ({
   toggleFavorite: (...args: unknown[]) => toggleFavoriteMock(...args),
 }))
 
+vi.mock('../../lib/smartMode', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/smartMode')>('../../lib/smartMode')
+  return {
+    ...actual,
+    loadSmartStatsFromBackend: vi.fn(),
+  }
+})
+
 vi.mock('../../hooks', async () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const actual = await vi.importActual<any>('../../hooks')

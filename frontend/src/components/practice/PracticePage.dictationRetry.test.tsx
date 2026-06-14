@@ -23,11 +23,28 @@ const useFavoriteWordsMock = vi.fn(() => ({
   toggleFavorite: vi.fn(),
 }))
 
+vi.mock('../../contexts/AIChatContext', async () => {
+  const actual = await vi.importActual<typeof import('../../contexts/AIChatContext')>('../../contexts/AIChatContext')
+  return {
+    ...actual,
+    setGlobalLearningContext: vi.fn(),
+  }
+})
+
+vi.mock('../../lib/smartMode', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/smartMode')>('../../lib/smartMode')
+  return {
+    ...actual,
+    recordWordResult: (...args: unknown[]) => recordWordResultMock(...args),
+  }
+})
+
 vi.mock('../../hooks', async () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const actual = await vi.importActual<any>('../../hooks')
   return {
     ...actual,
+    recordModeAnswer: (...args: unknown[]) => recordModeAnswerMock(...args),
     useSpeechRecognition: () => ({
     isConnected: true,
     isRecording: false,

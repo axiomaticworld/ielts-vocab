@@ -25,6 +25,23 @@ const useFavoriteWordsMock = vi.fn(() => ({
   toggleFavorite: vi.fn(),
 }))
 
+vi.mock('../../contexts/AIChatContext', async () => {
+  const actual = await vi.importActual<typeof import('../../contexts/AIChatContext')>('../../contexts/AIChatContext')
+  return {
+    ...actual,
+    setGlobalLearningContext: vi.fn(),
+  }
+})
+
+vi.mock('../../lib/smartMode', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/smartMode')>('../../lib/smartMode')
+  return {
+    ...actual,
+    chooseSmartDimension: vi.fn(() => 'meaning'),
+    loadSmartStats: vi.fn(() => ({})),
+  }
+})
+
 function setAuthenticatedUser(id: number | string) {
   localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify({ id }))
 }

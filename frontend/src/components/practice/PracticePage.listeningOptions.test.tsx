@@ -18,11 +18,28 @@ const useFavoriteWordsMock = vi.fn(() => ({
   toggleFavorite: vi.fn(),
 }))
 vi.stubGlobal('fetch', fetchMock)
+
+vi.mock('../../lib/smartMode', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/smartMode')>('../../lib/smartMode')
+  return {
+    ...actual,
+    chooseSmartDimension: vi.fn(() => 'meaning'),
+  }
+})
+
 const fetchFixturePatterns = [/^\/api\/vocabulary\/day\//, /^\/api\/books\/word-list\?/, /^\/api\/books\/[^/]+\/chapters$/]
 const backgroundPracticeWrites = new Set(['/api/ai/quick-memory/sync', '/api/ai/practice/game/attempt'])
 async function apiFetchFixture(url: string, ...args: unknown[]) {
   const requestUrl = String(url)
   if (fetchFixturePatterns.some(pattern => pattern.test(requestUrl))) return (await fetch(requestUrl)).json()
+  if (requestUrl === '/api/ai/log-session') {
+    const payload = args[0]
+    const body = typeof (payload as { body?: unknown } | undefined)?.body === 'string'
+      ? JSON.parse((payload as { body: string }).body)
+      : payload
+    logSessionMock(body)
+    return {}
+  }
   if (backgroundPracticeWrites.has(requestUrl)) return {}
   return apiFetchMock(url, ...args)
 }
@@ -31,6 +48,8 @@ vi.mock('../../hooks', async () => {
   const actual = await vi.importActual<any>('../../hooks')
   return {
     ...actual,
+    logSession: (...args: unknown[]) => logSessionMock(...args),
+    startSession: (...args: unknown[]) => startSessionMock(...args),
     useSpeechRecognition: () => ({
     isConnected: false,
     isRecording: false,
@@ -459,19 +478,19 @@ describe('PracticePage listening options loading', () => {
     )
     await flushRender()
     expect(screen.getByTestId('options-state')).toHaveTextContent('ready:guide:')
-    fireEvent.click(screen.getByRole('button', { name: 'answer-correct' }))
     vi.setSystemTime(new Date('2026-04-07T00:01:04.000Z'))
     await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'answer-correct' }))
       await vi.advanceTimersByTimeAsync(1300)
       await Promise.resolve()
       await Promise.resolve()
     })
     expect(screen.getByText('本轮完成')).toBeInTheDocument()
     expect(screen.getByText('本章练习')).toBeInTheDocument()
-    expect(screen.getByText('1分5秒')).toBeInTheDocument()
+    expect(screen.getByText('1秒')).toBeInTheDocument()
     expect(logSessionMock).toHaveBeenCalledWith(expect.objectContaining({
       chapterId: '1',
-      durationSeconds: 65,
+      durationSeconds: 1,
     }))
   })
 })

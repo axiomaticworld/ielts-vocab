@@ -1,6 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import FollowMode from './FollowMode'
 import type { Word } from './types'
@@ -105,7 +104,6 @@ vi.mock('../../features/speech/hooks/useSpeakingRecorder', async () => {
       // eslint-disable-next-line react-hooks/rules-of-hooks -- mock factory
       const resetRecording = React.useCallback(() => {
         recorderMock.reset()
-        setState({ durationSeconds: 0, error: null, isRecording: false, level: 0 })
       }, [])
       // eslint-disable-next-line react-hooks/rules-of-hooks -- mock factory
       const startRecording = React.useCallback(async () => {
@@ -120,14 +118,15 @@ vi.mock('../../features/speech/hooks/useSpeakingRecorder', async () => {
         setState({ durationSeconds: 1, error, isRecording: false, level: 0 })
         return recorderMock.nextStopBlob
       }, [])
-      return {
+      // eslint-disable-next-line react-hooks/rules-of-hooks -- mock factory
+      return React.useMemo(() => ({
         audioBlob: null,
         audioUrl: null,
         ...state,
         resetRecording,
         startRecording,
         stopRecording,
-      }
+      }), [resetRecording, startRecording, state, stopRecording])
     },
   }
 })
@@ -168,7 +167,13 @@ describe('FollowMode', () => {
       value: fetchMock.mockResolvedValue({ ok: true, blob: vi.fn().mockResolvedValue(new Blob(['ref'])) }),
       writable: true,
     })
-    Object.defineProperty(window, 'requestAnimationFrame', { value: vi.fn(() => 1), writable: true })
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      value: vi.fn((callback: FrameRequestCallback) => {
+        callback(performance.now())
+        return 1
+      }),
+      writable: true,
+    })
     Object.defineProperty(window, 'cancelAnimationFrame', { value: vi.fn(), writable: true })
   })
 
@@ -190,7 +195,6 @@ describe('FollowMode', () => {
       segments: [{ id: 'seg-0', letter_start: 0, letter_end: 10, letters: 'phenomenon', phonetic: 'fəˈnɒmɪnən', start_ms: 950, end_ms: 2400 }],
     })
 
-    const user = userEvent.setup()
     const onCompleteSession = vi.fn(() => Promise.resolve())
     const onIndexChange = vi.fn()
 
@@ -214,7 +218,7 @@ describe('FollowMode', () => {
     )
 
     await screen.findByText('/fəˈnɒmɪnən/')
-    await user.click(screen.getByRole('button', { name: '完成' }))
+    fireEvent.click(screen.getByRole('button', { name: '完成' }))
 
     await waitFor(() => {
       expect(onCompleteSession).toHaveBeenCalled()
@@ -267,7 +271,6 @@ describe('FollowMode', () => {
       model: 'qwen-audio-turbo',
     })
 
-    const user = userEvent.setup()
     const { container } = render(
       <FollowMode
         currentWord={makeWord()}
@@ -288,12 +291,15 @@ describe('FollowMode', () => {
     )
 
     await screen.findByText('/fə/')
-    await user.click(screen.getByRole('button', { name: '播放' }))
+    fireEvent.click(screen.getByRole('button', { name: '播放' }))
+    await waitFor(() => expect(audioSessionMock.play).toHaveBeenCalledTimes(1))
     expect(audioSessionMock.lastOnEnd).toBeNull()
     expect(recorderMock.start).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: '播放' }))
-    await user.click(screen.getByRole('button', { name: '录音' }))
-    await user.click(await screen.findByRole('button', { name: '停止' }))
+    fireEvent.click(screen.getByRole('button', { name: '播放' }))
+    await waitFor(() => expect(audioSessionMock.stop).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: '录音' }))
+    await waitFor(() => expect(recorderMock.start).toHaveBeenCalled())
+    fireEvent.click(await screen.findByRole('button', { name: '停止' }))
 
     await waitFor(() => {
       expect(evaluateFollowReadPronunciationMock).toHaveBeenCalled()
@@ -356,7 +362,6 @@ describe('FollowMode', () => {
       model: 'qwen-audio-turbo',
     })
 
-    const user = userEvent.setup()
     const { container } = render(
       <FollowMode
         currentWord={makeWord()}
@@ -377,8 +382,9 @@ describe('FollowMode', () => {
     )
 
     await screen.findByText('/fə/')
-    await user.click(screen.getByRole('button', { name: '录音' }))
-    await user.click(await screen.findByRole('button', { name: '停止' }))
+    fireEvent.click(screen.getByRole('button', { name: '录音' }))
+    await waitFor(() => expect(recorderMock.start).toHaveBeenCalled())
+    fireEvent.click(await screen.findByRole('button', { name: '停止' }))
 
     await screen.findByText('逐音标评分缺失，请重新跟读')
     expect(screen.queryByText('接近通过')).not.toBeInTheDocument()
@@ -406,7 +412,6 @@ describe('FollowMode', () => {
     })
     recorderMock.nextStopBlob = null
 
-    const user = userEvent.setup()
     render(
       <FollowMode
         currentWord={makeWord()}
@@ -425,8 +430,9 @@ describe('FollowMode', () => {
     )
 
     await screen.findByText('/fəˈnɒmɪnən/')
-    await user.click(screen.getByRole('button', { name: '录音' }))
-    await user.click(await screen.findByRole('button', { name: '停止' }))
+    fireEvent.click(screen.getByRole('button', { name: '录音' }))
+    await waitFor(() => expect(recorderMock.start).toHaveBeenCalled())
+    fireEvent.click(await screen.findByRole('button', { name: '停止' }))
 
     await screen.findByText('没有检测到有效跟读，请重试')
     expect(evaluateFollowReadPronunciationMock).not.toHaveBeenCalled()
@@ -451,7 +457,6 @@ describe('FollowMode', () => {
     })
     evaluateFollowReadPronunciationMock.mockRejectedValue(new Error('AI 评分服务额度已用尽，请在 DashScope 控制台处理。'))
 
-    const user = userEvent.setup()
     const onPronunciationEvaluated = vi.fn()
     render(
       <FollowMode
@@ -474,8 +479,9 @@ describe('FollowMode', () => {
     )
 
     await screen.findByText('/fəˈnɒmɪnən/')
-    await user.click(screen.getByRole('button', { name: '录音' }))
-    await user.click(await screen.findByRole('button', { name: '停止' }))
+    fireEvent.click(screen.getByRole('button', { name: '录音' }))
+    await waitFor(() => expect(recorderMock.start).toHaveBeenCalled())
+    fireEvent.click(await screen.findByRole('button', { name: '停止' }))
 
     await waitFor(() => {
       expect(screen.getByText('AI 评分服务额度已用尽，请在 DashScope 控制台处理。')).toBeInTheDocument()
