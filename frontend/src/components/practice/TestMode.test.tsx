@@ -132,6 +132,11 @@ describe('TestMode', () => {
     expect(screen.queryByRole('button', { name: '认识' })).toBeNull()
     expect(screen.queryByRole('button', { name: '不熟悉' })).toBeNull()
     expect(screen.queryByRole('button', { name: '不认识' })).toBeNull()
+    expect(screen.getByText('听完发音后判断熟悉度')).toBeInTheDocument()
+    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('不熟悉')).toBeInTheDocument()
 
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
     expect(screen.queryByRole('button', { name: '认识' })).toBeNull()
@@ -142,6 +147,9 @@ describe('TestMode', () => {
     expect(screen.getByRole('button', { name: '认识' })).toBeEnabled()
     expect(screen.getByRole('button', { name: '不熟悉' })).toBeEnabled()
     expect(screen.getByRole('button', { name: '不认识' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '认识' })).toHaveTextContent('认识')
+    expect(screen.getByRole('button', { name: '不熟悉' })).toHaveTextContent('不熟悉')
+    expect(screen.getByRole('button', { name: '不认识' })).toHaveTextContent('不认识')
   })
 
   it('hides known after 2.5 seconds and auto reveals unknown after 4 seconds', async () => {

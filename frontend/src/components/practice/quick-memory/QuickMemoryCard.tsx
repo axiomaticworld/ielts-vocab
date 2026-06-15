@@ -135,16 +135,26 @@ export function QuickMemoryCard({
     : wasFuzzy && isTestMode
       ? '△ 不熟悉'
       : '✗ 不认识'
-  const keyHints = (
-    <div className="qm-key-hints">
-      {canGoPrev && <span className="qm-key-hint"><kbd>←</kbd> 上一个</span>}
-      {phase === 'question' && (!isTestMode || (questionReady && knownChoiceAvailable)) && (
-        <span className="qm-key-hint"><kbd>→</kbd> 认识</span>
-      )}
-      {phase === 'reveal' && <span className="qm-key-hint"><kbd>→</kbd> 下一个</span>}
-      <span className="qm-key-hint">点右上角喇叭或 <kbd>Tab</kbd> 重播发音</span>
-    </div>
-  )
+  const keyHints = isTestMode && phase === 'question'
+    ? (
+      <div className="qm-key-hints qm-key-hints--test">
+        {canGoPrev && <span className="qm-key-hint"><kbd>←</kbd> 上一个</span>}
+        {knownChoiceAvailable && <span className="qm-key-hint"><kbd>1</kbd> 认识</span>}
+        <span className="qm-key-hint"><kbd>2</kbd> 不熟悉</span>
+        <span className="qm-key-hint"><kbd>3</kbd> 不认识</span>
+        <span className="qm-key-hint">点右上角喇叭或 <kbd>Tab</kbd> 重播发音</span>
+      </div>
+    )
+    : (
+      <div className="qm-key-hints">
+        {canGoPrev && <span className="qm-key-hint"><kbd>←</kbd> 上一个</span>}
+        {phase === 'question' && (!isTestMode || (questionReady && knownChoiceAvailable)) && (
+          <span className="qm-key-hint"><kbd>→</kbd> 认识</span>
+        )}
+        {phase === 'reveal' && <span className="qm-key-hint"><kbd>→</kbd> 下一个</span>}
+        <span className="qm-key-hint">点右上角喇叭或 <kbd>Tab</kbd> 重播发音</span>
+      </div>
+    )
 
   return (
     <div className="qm-root">
@@ -168,6 +178,7 @@ export function QuickMemoryCard({
                 ? countdown > 0 && <div className="qm-countdown-ring"><QuickMemoryCountdownRing seconds={countdown} total={totalSeconds} /></div>
                 : <div className="qm-audio-prompt"><SpeakerIcon /></div>}
               <p className="qm-hint">听完发音后判断熟悉度</p>
+              {keyHints}
               {questionReady && (
                 <>
                   <div className="qm-choice-row">
@@ -186,7 +197,6 @@ export function QuickMemoryCard({
                       不认识
                     </button>
                   </div>
-                  {keyHints}
                 </>
               )}
             </>

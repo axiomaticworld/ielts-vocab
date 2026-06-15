@@ -15,6 +15,12 @@
     transform: translateY(calc(var(--size-1) * -1));
 }
 
+.qm-key-hints--test {
+    flex-wrap: wrap;
+    row-gap: var(--size-8);
+    max-width: 100%;
+}
+
 .qm-btn:disabled,
 .qm-btn:disabled:hover {
     opacity: var(--alpha-52);
