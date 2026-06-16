@@ -258,3 +258,33 @@
 - `blood pressure` — phrase_policy_needed,需先确认产品策略(单词簿展示/TTS 是否对短语用单词 IPA)再决定。当前不在 12 词补音频范围里。
 
 详细 OSS object_key 见 `output/luo_phonetic_rerun.json`。
+---
+
+## 2026-06-16 跟进(2):production 验证
+
+初次 rerun 上传时 cache key 用了 `@ipa-<md5>` 后缀(rerun 脚本默认行为),但 production lookup 用的是 `azure-rest:...@azure-word-v6-ielts-rp-female-onset-buffer-en-gb-libbyneural/`(无 IPA digest)。两者路径不一致,production 端 metadata API 一直指向老 cache 里的音频。
+
+**修正**: 重新合成 12 个词,直接用 production 路径 `azure-rest:audio-24khz-48kbitrate-mono-mp3@azure-word-v6-ielts-rp-female-onset-buffer` 上传。
+
+### Production metadata 验证 (https://axiomaticworld.com/api/tts/word-audio/metadata)
+
+| 词 | production byte_length | 期望 (上传后) | 匹配 |
+|---|---|---|---|
+| `direction` | 11808 | 11808 | OK |
+| `metals` | 10800 | 10800 | OK |
+| `lecture` | 10944 | 10944 | OK |
+| `flexible` | 11520 | 11520 | OK |
+| `fountain` | 11520 | 11520 | OK |
+| `ocean` | 10656 | 10656 | OK |
+| `door` | 9792 | 9792 | OK |
+| `tutor` | 10800 | 10800 | OK |
+| `theatre` | 10656 | 10656 | OK |
+| `temperatures` | 12240 | 12240 | OK |
+| `car` | 9648 | 9648 | OK |
+| `animal` | 10656 | 10656 | OK |
+
+**12/12 production metadata 与新上传文件完全一致**, etag 也匹配(`cache_key` 第三段是 `<bytes>:<etag>` 摘要)。
+
+即:用户现在在前端能听到这 12 个词用新 IPA 合成的新音频。
+
+详细 OSS object_key 见 `output/luo_prod_path_rerun.json`。
