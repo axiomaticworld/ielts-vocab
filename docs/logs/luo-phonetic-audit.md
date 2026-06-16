@@ -324,3 +324,56 @@
 剩余 0 个 luo 收藏词需要音标修复或音频补。
 
 下一步可选:`audit_premium_phonetics.py --only-unsafe` 可以找 *luo 收藏之外* 的其他 catalog 不安全条目;这是横向扩展,不是 luo 专项。
+---
+
+## 2026-06-16 横向扩展(catalog-wide)
+
+本地扫所有 `vocabulary_data/ielts_*.json` 和 `*.csv`,用 `has_unsafe_marker` 找出所有含 `( )` `ᵊ` `{}` 的条目:
+
+| 项 | 数量 |
+|---|---|
+| 含 unsafe 的唯一词 | 1076 |
+| 之前 (2026-06-16 之前) 已通过 override 修复 | 272 |
+| 本轮 luo 专项 (上一节) 修复 | 16 |
+| 本轮横向扩展 修复 (top 100) | 100 |
+| **仍在 unsafe** | 704 |
+| 总 overrides | 580 |
+
+### 横向扩展 100 个词的来源
+
+按 catalog 出现频次倒排,取 top 100:
+
+- **87 个** Oxford/Cambridge/Longman/Wiktionary 中 2+ 源一致 → 全部修复
+- **13 个** 仅 1 个源返回 → 仍按 1 源写入(下次扩展再交叉验证)
+- **0 个** 完全没返回 → 0
+
+### Production 验证
+
+100/100 通过 `https://axiomaticworld.com/api/tts/word-audio/metadata` 验证,byte_length + etag 与上传文件一致。
+
+### 选词与决策依据
+
+- 优先按 catalog 出现次数排(高频词影响用户多)
+- 决策规则: 2+ 公开源(Oxford/Cambridge/Longman/Wiktionary)的 canonical UK form 一致 → 写 override
+- canonical UK = 移除 `(r)`(non-rhotic),`()`(uncertain); 保留显式 `ə`; 移除 syllable dots / length marks for matching
+- 一律 `content_mode='word'` + Azure SSML phoneme hint,跟现有 16 个 luo 词保持一致
+
+### 仍未修的 704 个怎么处理
+
+仍在 catalog 里 unsafe 的 704 个,主要分两类:
+
+1. **低于 top 100 频次的**(`/kaʊntər/` 这种长尾词) — 需要再跑一两轮同模式扫描
+2. **Oxford/Longman/Wiktionary 全部 blocked** 的(Cambridge-only) — Cambridge UK 一致的话也可以批量补
+
+后续可以分批跑:
+
+```
+# 第二轮: top 101-300
+python3 -c "from scripts.premium_phonetic_audit_support import SourceFetcher; ..."
+```
+
+按 100/批 × ~5min/批,处理 704 个大约需要 35 分钟(其中 ~25 分钟是源查询,10 分钟是合成+上传)。
+
+不建议一次性跑完:**一旦 IPA 写错会污染所有 premium 词书的 TTS**,分批+人耳 spot-check 几个更稳妥。
+
+详细 100 个决策在 `output/catalog_unsafe_top100_decisions.json`,应用结果在 `output/catalog_unsafe_top100_apply.json`。
