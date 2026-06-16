@@ -226,3 +226,35 @@
 3. **LLM 拒绝** (`identification`/`factories`/`fountains`/`computers`): 4/29 LLM 在多个源之间没有稳定建议,需通过别的途径 (Wiktionary 或音频校对) 重新确认;`identification` 当前已有 override (从 `(ə)n` 改成 `ən`),但另外 3 个 catalog 仍是 unsafe 或空。
 
 4. **确认过但未修复** 的 (`direction`/`metals` 等 manual_review+unsafe): 这些是同一类问题 — catalog 显示 unsafe,未修复。优先级最高。
+---
+
+## 2026-06-16 跟进:12 个 unsafe_unfixed 全部修复
+
+根据 4/29 报告和 Oxford / Cambridge / Longman / Wiktionary 公开源查证,
+对 12 个 unsafe 词决定最终音标如下,并补 Azure 单词 TTS 音频:
+
+| 词 | 4/29 catalog (unsafe) | 修复后 override | OSS 状态 | 字节数 |
+|---|---|---|---|---|
+| `direction` | (unsafe) | `/dəˈrekʃn/` | uploaded | 11808 |
+| `metals` | (unsafe) | `/ˈmetəlz/` | uploaded | 10800 |
+| `lecture` | (unsafe) | `/ˈlektʃə/` | uploaded | 10944 |
+| `flexible` | (unsafe) | `/ˈfleksəbl/` | uploaded | 11520 |
+| `fountain` | (unsafe) | `/ˈfaʊntɪn/` | uploaded | 11520 |
+| `ocean` | (unsafe) | `/ˈəʊʃən/` | uploaded | 10656 |
+| `door` | (unsafe) | `/dɔː/` | uploaded | 9792 |
+| `tutor` | (unsafe) | `/ˈtjuːtə/` | uploaded | 10800 |
+| `theatre` | (unsafe) | `/ˈθɪətə/` | uploaded | 10656 |
+| `temperatures` | (unsafe) | `/ˈtemprətʃəz/` | uploaded | 12240 |
+| `car` | (unsafe) | `/kɑː/` | uploaded | 9648 |
+| `animal` | (unsafe) | `/ˈænɪməl/` | uploaded | 10656 |
+
+**操作摘要**:
+- 12 个 override 写入 `vocabulary_data/phonetic_overrides.json`(总数 464 → 476)
+- 12 个词 Azure 单词 TTS 重新合成,本地缓存 + OSS 上传完成
+- TTS provider: Azure Speech (region `eastus`, voice `en-GB-LibbyNeural`)
+- SSML 用了 overrides 字典里的 IPA 作为 phoneme 提示,所以读音和 override 完全一致
+
+**未处理的剩余问题 (1 个)**:
+- `blood pressure` — phrase_policy_needed,需先确认产品策略(单词簿展示/TTS 是否对短语用单词 IPA)再决定。当前不在 12 词补音频范围里。
+
+详细 OSS object_key 见 `output/luo_phonetic_rerun.json`。
