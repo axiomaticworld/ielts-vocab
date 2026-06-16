@@ -135,9 +135,10 @@ describe('TestMode', () => {
     expect(screen.queryByRole('button', { name: /快捷键: 2 不熟悉/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /快捷键: 3 不认识/ })).toBeNull()
     expect(screen.getByText('听完发音后判断熟悉度')).toBeInTheDocument()
-    expect(screen.getByText('快捷键: 1')).toBeInTheDocument()
-    expect(screen.getByText('快捷键: 2')).toBeInTheDocument()
-    expect(screen.getByText('快捷键: 3')).toBeInTheDocument()
+    // 听的阶段不显示快捷键预览,避免在按钮未就绪时给用户"看得到按不到"的提示
+    expect(screen.queryByText('快捷键: 1')).toBeNull()
+    expect(screen.queryByText('快捷键: 2')).toBeNull()
+    expect(screen.queryByText('快捷键: 3')).toBeNull()
     expect(screen.queryByRole('button', { name: /快捷键: 1 认识/ })).toBeNull()
 
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
@@ -301,10 +302,13 @@ describe('TestMode', () => {
     )
 
     expect(compactStylesheet).toContain('.qm-card:not(.qm-card--test) .qm-key-hints')
-    expect(compactStylesheet).toContain('.qm-card--test .qm-choice-shortcuts')
     expect(compactStylesheet).toContain('.qm-card--test .qm-btn')
     expect(compactStylesheet).not.toContain('.qm-hint,\n    .qm-key-hints')
     expect(testStylesheet).toContain('.qm-card--test .qm-btn-key')
-    expect(testStylesheet).toContain('.qm-choice-shortcuts')
+    // The "listening" phase no longer previews the shortcut row above the buttons
+    // (the user found it confusing — buttons not yet ready but hints already visible).
+    expect(testStylesheet).not.toContain('.qm-choice-shortcuts')
+    expect(testStylesheet).not.toContain('.qm-choice-shortcut-slot')
+    expect(compactStylesheet).not.toContain('.qm-choice-shortcuts')
   })
 })

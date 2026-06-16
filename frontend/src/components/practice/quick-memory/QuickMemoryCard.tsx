@@ -135,23 +135,6 @@ export function QuickMemoryCard({
     : wasFuzzy && isTestMode
       ? '△ 不熟悉'
       : '✗ 不认识'
-  const testChoiceShortcutsPreview = isTestMode && phase === 'question' && !questionReady
-    ? (
-      <div className="qm-choice-shortcuts" aria-hidden="true">
-        {knownChoiceAvailable && (
-          <div className="qm-choice-shortcut-slot qm-choice-shortcut-slot--known">
-            <span className="qm-btn-key">快捷键: 1</span>
-          </div>
-        )}
-        <div className="qm-choice-shortcut-slot qm-choice-shortcut-slot--familiar">
-          <span className="qm-btn-key">快捷键: 2</span>
-        </div>
-        <div className="qm-choice-shortcut-slot qm-choice-shortcut-slot--unknown">
-          <span className="qm-btn-key">快捷键: 3</span>
-        </div>
-      </div>
-    )
-    : null
 
   const keyHints = isTestMode && phase === 'question'
     ? (
@@ -193,7 +176,6 @@ export function QuickMemoryCard({
                 ? countdown > 0 && <div className="qm-countdown-ring"><QuickMemoryCountdownRing seconds={countdown} total={totalSeconds} /></div>
                 : <div className="qm-audio-prompt"><SpeakerIcon /></div>}
               <p className="qm-hint">听完发音后判断熟悉度</p>
-              {testChoiceShortcutsPreview}
               {questionReady && (
                 <div className="qm-choice-row">
                   {knownChoiceAvailable && (

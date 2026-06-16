@@ -21,43 +21,6 @@
     max-width: 100%;
 }
 
-.qm-choice-shortcuts {
-    display: flex;
-    gap: var(--size-20);
-    width: 100%;
-    margin-top: var(--size-8);
-}
-
-.qm-choice-shortcut-slot {
-    flex: 1;
-    display: flex;
-    justify-content: flex-end;
-    min-height: var(--size-20);
-}
-
-.qm-card--test .qm-choice-shortcut-slot .qm-btn-key {
-    align-self: center;
-    font-size: var(--size-12);
-    color: var(--text-tertiary);
-    opacity: 0.75;
-    font-weight: 500;
-    white-space: nowrap;
-    line-height: 1.2;
-    letter-spacing: 0.02em;
-}
-
-.qm-card--test .qm-choice-shortcut-slot--known .qm-btn-key {
-    color: var(--accent);
-}
-
-.qm-card--test .qm-choice-shortcut-slot--familiar .qm-btn-key {
-    color: var(--warning);
-}
-
-.qm-card--test .qm-choice-shortcut-slot--unknown .qm-btn-key {
-    color: var(--error);
-}
-
 .qm-card--test .qm-btn {
     flex-direction: column;
     align-items: stretch;
@@ -92,20 +55,14 @@
 }
 
 @media (max-width: 480px) {
-    .qm-card--test .qm-choice-row,
-    .qm-card--test .qm-choice-shortcuts {
+    .qm-card--test .qm-choice-row {
         gap: var(--size-8);
     }
 }
 
 @media (max-height: 640px) {
-    .qm-card--test .qm-key-hints--test,
-    .qm-card--test .qm-choice-shortcuts {
+    .qm-card--test .qm-key-hints--test {
         width: 100%;
-        justify-content: center;
-    }
-
-    .qm-card--test .qm-choice-shortcut-slot {
         justify-content: center;
     }
 
