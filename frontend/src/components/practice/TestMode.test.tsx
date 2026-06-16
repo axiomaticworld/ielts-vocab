@@ -131,27 +131,30 @@ describe('TestMode', () => {
     expect(screen.queryByText('within')).toBeNull()
     expect(screen.queryByText('/wɪˈðɪn/')).toBeNull()
     expect(screen.queryByText('inside')).toBeNull()
-    expect(screen.queryByRole('button', { name: '认识' })).toBeNull()
-    expect(screen.queryByRole('button', { name: '不熟悉' })).toBeNull()
-    expect(screen.queryByRole('button', { name: '不认识' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /快捷键: 1 认识/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /快捷键: 2 不熟悉/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /快捷键: 3 不认识/ })).toBeNull()
     expect(screen.getByText('听完发音后判断熟悉度')).toBeInTheDocument()
-    expect(screen.getByText('1')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
-    expect(screen.getByText('不熟悉')).toBeInTheDocument()
+    expect(screen.getByText('快捷键: 1')).toBeInTheDocument()
+    expect(screen.getByText('快捷键: 2')).toBeInTheDocument()
+    expect(screen.getByText('快捷键: 3')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /快捷键: 1 认识/ })).toBeNull()
 
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
-    expect(screen.queryByRole('button', { name: '认识' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /快捷键: 1 认识/ })).toBeNull()
     expect(screen.queryByText('✗ 不认识')).toBeNull()
 
     completeInitialAudio()
     expect(screen.getByText('4')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '认识' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: '不熟悉' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: '不认识' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: '认识' })).toHaveTextContent('认识')
-    expect(screen.getByRole('button', { name: '不熟悉' })).toHaveTextContent('不熟悉')
-    expect(screen.getByRole('button', { name: '不认识' })).toHaveTextContent('不认识')
+    expect(screen.getByRole('button', { name: /快捷键: 1 认识/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /快捷键: 2 不熟悉/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /快捷键: 3 不认识/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /快捷键: 1 认识/ })).toHaveTextContent('认识')
+    expect(screen.getByRole('button', { name: /快捷键: 2 不熟悉/ })).toHaveTextContent('不熟悉')
+    expect(screen.getByRole('button', { name: /快捷键: 3 不认识/ })).toHaveTextContent('不认识')
+    expect(screen.getAllByText('快捷键: 1').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('快捷键: 2').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('快捷键: 3').length).toBeGreaterThan(0)
   })
 
   it('hides known after 2.5 seconds and auto reveals unknown after 4 seconds', async () => {
@@ -159,9 +162,9 @@ describe('TestMode', () => {
     completeInitialAudio()
 
     await act(async () => { await vi.advanceTimersByTimeAsync(2500) })
-    expect(screen.queryByRole('button', { name: '认识' })).toBeNull()
-    expect(screen.getByRole('button', { name: '不熟悉' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: '不认识' })).toBeEnabled()
+    expect(screen.queryByRole('button', { name: /快捷键: 1 认识/ })).toBeNull()
+    expect(screen.getByRole('button', { name: /快捷键: 2 不熟悉/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /快捷键: 3 不认识/ })).toBeEnabled()
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1500)
@@ -180,7 +183,7 @@ describe('TestMode', () => {
     completeInitialAudio()
 
     await act(async () => {
-      screen.getByRole('button', { name: '不熟悉' }).click()
+      screen.getByRole('button', { name: /快捷键: 2 不熟悉/ }).click()
       await Promise.resolve()
     })
 
@@ -235,7 +238,7 @@ describe('TestMode', () => {
       await Promise.resolve()
     })
 
-    expect(screen.getByRole('button', { name: '不认识' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /快捷键: 3 不认识/ })).toBeEnabled()
     expect(screen.queryByText('✗ 不认识')).toBeNull()
     expect(onWrongWord).not.toHaveBeenCalled()
     input.remove()
@@ -246,7 +249,7 @@ describe('TestMode', () => {
     completeInitialAudio()
 
     await act(async () => { await vi.advanceTimersByTimeAsync(2500) })
-    expect(screen.queryByRole('button', { name: '认识' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /快捷键: 1 认识/ })).toBeNull()
 
     await act(async () => {
       fireEvent.keyDown(window, { key: '1', code: 'Digit1' })
@@ -272,14 +275,14 @@ describe('TestMode', () => {
     completeInitialAudio()
 
     await act(async () => {
-      screen.getByRole('button', { name: '认识' }).click()
+      screen.getByRole('button', { name: /快捷键: 1 认识/ }).click()
       await Promise.resolve()
     })
 
     expect(screen.getByText('✓ 认识')).toBeInTheDocument()
     expect(screen.getByText('within')).toBeInTheDocument()
     expect(screen.getByText('inside')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '认识' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /快捷键: 1 认识/ })).toBeNull()
 
     await act(async () => {
       resolveSession(1)
@@ -292,9 +295,16 @@ describe('TestMode', () => {
       resolve(__dirname, '../../styles/pages/practice/practice-quickmemory-compact.scss'),
       'utf8',
     )
+    const testStylesheet = readFileSync(
+      resolve(__dirname, '../../styles/pages/practice/practice-quickmemory-test.scss'),
+      'utf8',
+    )
 
     expect(compactStylesheet).toContain('.qm-card:not(.qm-card--test) .qm-key-hints')
-    expect(compactStylesheet).toContain('.qm-card--test .qm-key-hints')
+    expect(compactStylesheet).toContain('.qm-card--test .qm-choice-shortcuts')
+    expect(compactStylesheet).toContain('.qm-card--test .qm-btn')
     expect(compactStylesheet).not.toContain('.qm-hint,\n    .qm-key-hints')
+    expect(testStylesheet).toContain('.qm-card--test .qm-btn-key')
+    expect(testStylesheet).toContain('.qm-choice-shortcuts')
   })
 })

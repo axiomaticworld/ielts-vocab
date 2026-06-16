@@ -21,6 +21,44 @@
     max-width: 100%;
 }
 
+.qm-choice-shortcuts {
+    display: flex;
+    gap: var(--size-20);
+    width: 100%;
+    margin-top: var(--size-8);
+}
+
+.qm-choice-shortcut-slot {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    min-height: var(--size-20);
+}
+
+.qm-card--test .qm-btn {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--size-8);
+    padding-top: var(--size-12);
+}
+
+.qm-card--test .qm-btn-key {
+    align-self: flex-end;
+    font-size: var(--size-14);
+    color: var(--text-tertiary);
+    opacity: 0.7;
+    font-weight: 400;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.qm-card--test .qm-btn-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--size-8);
+}
+
 .qm-btn:disabled,
 .qm-btn:disabled:hover {
     opacity: var(--alpha-52);
@@ -30,14 +68,25 @@
 }
 
 @media (max-width: 480px) {
-    .qm-card--test .qm-choice-row {
+    .qm-card--test .qm-choice-row,
+    .qm-card--test .qm-choice-shortcuts {
         gap: var(--size-8);
     }
 }
 
 @media (max-height: 640px) {
-    .qm-card--test .qm-key-hints--test {
+    .qm-card--test .qm-key-hints--test,
+    .qm-card--test .qm-choice-shortcuts {
         width: 100%;
         justify-content: center;
+    }
+
+    .qm-card--test .qm-choice-shortcut-slot {
+        justify-content: center;
+    }
+
+    .qm-card--test .qm-btn-key {
+        align-self: center;
+        font-size: var(--size-12);
     }
 }

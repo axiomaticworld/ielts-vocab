@@ -135,13 +135,28 @@ export function QuickMemoryCard({
     : wasFuzzy && isTestMode
       ? '△ 不熟悉'
       : '✗ 不认识'
+  const testChoiceShortcutsPreview = isTestMode && phase === 'question' && !questionReady
+    ? (
+      <div className="qm-choice-shortcuts" aria-hidden="true">
+        {knownChoiceAvailable && (
+          <div className="qm-choice-shortcut-slot">
+            <span className="qm-btn-key">快捷键: 1</span>
+          </div>
+        )}
+        <div className="qm-choice-shortcut-slot">
+          <span className="qm-btn-key">快捷键: 2</span>
+        </div>
+        <div className="qm-choice-shortcut-slot">
+          <span className="qm-btn-key">快捷键: 3</span>
+        </div>
+      </div>
+    )
+    : null
+
   const keyHints = isTestMode && phase === 'question'
     ? (
       <div className="qm-key-hints qm-key-hints--test">
         {canGoPrev && <span className="qm-key-hint"><kbd>←</kbd> 上一个</span>}
-        {knownChoiceAvailable && <span className="qm-key-hint"><kbd>1</kbd> 认识</span>}
-        <span className="qm-key-hint"><kbd>2</kbd> 不熟悉</span>
-        <span className="qm-key-hint"><kbd>3</kbd> 不认识</span>
         <span className="qm-key-hint">点右上角喇叭或 <kbd>Tab</kbd> 重播发音</span>
       </div>
     )
@@ -178,27 +193,35 @@ export function QuickMemoryCard({
                 ? countdown > 0 && <div className="qm-countdown-ring"><QuickMemoryCountdownRing seconds={countdown} total={totalSeconds} /></div>
                 : <div className="qm-audio-prompt"><SpeakerIcon /></div>}
               <p className="qm-hint">听完发音后判断熟悉度</p>
-              {keyHints}
+              {testChoiceShortcutsPreview}
               {questionReady && (
-                <>
-                  <div className="qm-choice-row">
-                    {knownChoiceAvailable && (
-                      <button className="qm-btn qm-btn--known" onClick={onKnown}>
+                <div className="qm-choice-row">
+                  {knownChoiceAvailable && (
+                    <button type="button" className="qm-btn qm-btn--known" onClick={onKnown}>
+                      <span className="qm-btn-key">快捷键: 1</span>
+                      <span className="qm-btn-label">
                         <CheckIcon />
                         认识
-                      </button>
-                    )}
-                    <button className="qm-btn qm-btn--familiar" onClick={onFamiliar}>
+                      </span>
+                    </button>
+                  )}
+                  <button type="button" className="qm-btn qm-btn--familiar" onClick={onFamiliar}>
+                    <span className="qm-btn-key">快捷键: 2</span>
+                    <span className="qm-btn-label">
                       <CheckIcon />
                       不熟悉
-                    </button>
-                    <button className="qm-btn qm-btn--unknown" onClick={onUnknown}>
+                    </span>
+                  </button>
+                  <button type="button" className="qm-btn qm-btn--unknown" onClick={onUnknown}>
+                    <span className="qm-btn-key">快捷键: 3</span>
+                    <span className="qm-btn-label">
                       <CrossIcon />
                       不认识
-                    </button>
-                  </div>
-                </>
+                    </span>
+                  </button>
+                </div>
               )}
+              {keyHints}
             </>
           )}
           {phase === 'question' && !isTestMode && (
