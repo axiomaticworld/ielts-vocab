@@ -35,6 +35,29 @@
     min-height: var(--size-20);
 }
 
+.qm-card--test .qm-choice-shortcut-slot .qm-btn-key {
+    align-self: center;
+    font-size: var(--size-12);
+    color: var(--text-tertiary);
+    opacity: 0.75;
+    font-weight: 500;
+    white-space: nowrap;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+}
+
+.qm-card--test .qm-choice-shortcut-slot--known .qm-btn-key {
+    color: var(--accent);
+}
+
+.qm-card--test .qm-choice-shortcut-slot--familiar .qm-btn-key {
+    color: var(--warning);
+}
+
+.qm-card--test .qm-choice-shortcut-slot--unknown .qm-btn-key {
+    color: var(--error);
+}
+
 .qm-card--test .qm-btn {
     flex-direction: column;
     align-items: stretch;

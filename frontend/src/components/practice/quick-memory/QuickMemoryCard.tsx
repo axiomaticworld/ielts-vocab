@@ -139,14 +139,14 @@ export function QuickMemoryCard({
     ? (
       <div className="qm-choice-shortcuts" aria-hidden="true">
         {knownChoiceAvailable && (
-          <div className="qm-choice-shortcut-slot">
+          <div className="qm-choice-shortcut-slot qm-choice-shortcut-slot--known">
             <span className="qm-btn-key">快捷键: 1</span>
           </div>
         )}
-        <div className="qm-choice-shortcut-slot">
+        <div className="qm-choice-shortcut-slot qm-choice-shortcut-slot--familiar">
           <span className="qm-btn-key">快捷键: 2</span>
         </div>
-        <div className="qm-choice-shortcut-slot">
+        <div className="qm-choice-shortcut-slot qm-choice-shortcut-slot--unknown">
           <span className="qm-btn-key">快捷键: 3</span>
         </div>
       </div>
