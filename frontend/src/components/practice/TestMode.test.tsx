@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import React from 'react'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { vi } from 'vitest'
@@ -283,5 +285,16 @@ describe('TestMode', () => {
       resolveSession(1)
       await Promise.resolve()
     })
+  })
+
+  it('keeps compact-viewport shortcut hints visible in test mode', () => {
+    const compactStylesheet = readFileSync(
+      resolve(__dirname, '../../styles/pages/practice/practice-quickmemory-compact.scss'),
+      'utf8',
+    )
+
+    expect(compactStylesheet).toContain('.qm-card:not(.qm-card--test) .qm-key-hints')
+    expect(compactStylesheet).toContain('.qm-card--test .qm-key-hints')
+    expect(compactStylesheet).not.toContain('.qm-hint,\n    .qm-key-hints')
   })
 })

@@ -34,3 +34,10 @@
         gap: var(--size-8);
     }
 }
+
+@media (max-height: 640px) {
+    .qm-card--test .qm-key-hints--test {
+        width: 100%;
+        justify-content: center;
+    }
+}
