@@ -288,3 +288,39 @@
 即:用户现在在前端能听到这 12 个词用新 IPA 合成的新音频。
 
 详细 OSS object_key 见 `output/luo_prod_path_rerun.json`。
+---
+
+## 2026-06-16 跟进(3):blood pressure 短语 + 3 个 LLM-rejected 词
+
+### 短语 `blood pressure`
+
+- override 写入: `/ˈblʌd ˈpreʃə/` (Cambridge UK form, two stress marks)
+- lookup_azure_word_phonetic 现在能拿到 override 里的 IPA 作为 SSML phoneme
+- Azure word-tts 合成 12960 字节,上传到 production 路径,metadata 验证 OK
+- `is_azure_tts_phonetic_safe(/ˈblʌd ˈpreʃə/)` 返回 True (旧 unsafe IPA 是 False)
+
+### 3 个 LLM-rejected 词补 override + TTS
+
+4/29 报告 `llm_candidate_rejected` 类别下的 3 个词 `fountains` / `factories` / `computers`,之前 LLM 没给出稳定建议。这次用 Oxford/Cambridge/Longman/Wiktionary 公开源查证(以 Cambridge 为主源),决定如下:
+
+| 词 | 新 override | 源 | prod verify |
+|---|---|---|---|
+| `fountains` | `/ˈfaʊntɪnz/` | Cambridge `/ˈfaʊn.tɪn/` + 复数 /z/ | OK 12384 bytes |
+| `factories` | `/ˈfæktəriz/` | Cambridge `/ˈfæk.tər.i/` / `/ˈfæktəri/` + 复数 /z/ | OK 12240 bytes |
+| `computers` | `/kəmˈpjuːtəz/` | Cambridge `/kəmˈpjuː.tər/` + 复数 /z/ | OK 12240 bytes |
+
+(`identification` 已有 override,所以不在这次补范围内)
+
+## 2026-06-16 全部跟进汇总
+
+| 桶 | 数量 | 状态 |
+|---|---|---|
+| 新补 override + Azure TTS + production metadata 验证 | **13 + 3 = 16** | 全部 prod 12/12 + 3/3 + 短语 1 OK |
+| 之前已有 override (4/29 fix 已落地) | 9 | 不需要再操作 |
+| 短语已补 override (含 blood pressure) | 4 | override 已生效,production 音频同步 |
+| manual_review catalog fine (luo/系统标记但 catalog 实际无误) | 77 | **不需要任何代码动作**,只是 audit 建议人工听音频二次确认 |
+| **全部 110 个 luo 收藏词** | **110** | **真正需要操作的 16 个全部完成** |
+
+剩余 0 个 luo 收藏词需要音标修复或音频补。
+
+下一步可选:`audit_premium_phonetics.py --only-unsafe` 可以找 *luo 收藏之外* 的其他 catalog 不安全条目;这是横向扩展,不是 luo 专项。
