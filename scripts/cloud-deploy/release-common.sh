@@ -78,13 +78,13 @@ prepare_repository_root() {
 }
 
 fetch_git_commit() {
-  local git_ref="${1:?git ref is required}"
-  local fetch_ref="refs/heads/${git_ref}:refs/remotes/origin/${git_ref}"
-  local rev_ref="refs/remotes/origin/${git_ref}^{commit}"
-  local status=0
-  if [[ "${git_ref}" =~ ^[0-9a-f]{7,40}$ ]]; then
-    fetch_ref="${git_ref}"
-    rev_ref="FETCH_HEAD^{commit}"
+  local git_ref="${1:?git ref is required}" fetch_ref="" rev_ref="" commit_sha="" status=0
+  fetch_ref="refs/heads/${git_ref}:refs/remotes/origin/${git_ref}"
+  rev_ref="refs/remotes/origin/${git_ref}^{commit}"
+  if [[ "${git_ref}" =~ ^[0-9a-f]{40}$ ]]; then
+    fetch_ref="${git_ref}"; rev_ref="FETCH_HEAD^{commit}"
+  elif [[ "${git_ref}" =~ ^[0-9a-f]{7,39}$ ]]; then
+    fetch_ref="HEAD"; rev_ref="${git_ref}^{commit}"
   fi
   env GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -o BatchMode=yes -o ServerAliveInterval=10 -o ServerAliveCountMax=2}" timeout "${DEPLOY_GIT_FETCH_TIMEOUT_SECONDS}" \
     git -C "${REPOSITORY_ROOT}" fetch --tags origin "${fetch_ref}" >/dev/null || status=$?
@@ -92,7 +92,8 @@ fetch_git_commit() {
     printf '[%s] ERROR: git fetch for %s failed or timed out after %ss (status %s)\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${git_ref}" "${DEPLOY_GIT_FETCH_TIMEOUT_SECONDS}" "${status}" >&2
     return "${status}"
   fi
-  git -C "${REPOSITORY_ROOT}" rev-parse --verify "${rev_ref}"
+  commit_sha="$(git -C "${REPOSITORY_ROOT}" rev-parse --verify "${rev_ref}")" || { printf '[%s] ERROR: git ref %s was fetched but did not resolve to a single commit\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${git_ref}" >&2; return 1; }
+  printf '%s\n' "${commit_sha}"
 }
 
 ensure_python_runtime() {
