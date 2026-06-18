@@ -157,6 +157,31 @@ def test_resolve_word_audio_request_uses_tts_specific_phonetic_override(monkeypa
     assert '@ipa-8ff96fc1' in request['model']
 
 
+def test_resolve_word_audio_request_uses_secretary_three_syllable_identity(monkeypatch):
+    module = _load_gateway_media_proxy_module()
+
+    monkeypatch.setattr(
+        module,
+        'resolve_normal_word_audio_identity',
+        lambda: (
+            'azure',
+            'azure-rest:test@azure-word-v6-ielts-rp-female-onset-buffer',
+            'en-GB-LibbyNeural',
+        ),
+    )
+    monkeypatch.setattr(
+        module,
+        'word_tts_cache_path',
+        lambda base, normalized, model, voice: Path(f'{normalized}-{model}-{voice}.mp3'),
+    )
+
+    request = module.resolve_word_audio_request('secretary')
+
+    assert request['phonetic'] == '/ˈsekrətri/'
+    assert '@ipa-d78632a1' in request['model']
+    assert '@ipa-611d1165' not in request['model']
+
+
 def test_resolve_word_audio_request_reviews_uncertain_phonetic(monkeypatch):
     module = _load_gateway_media_proxy_module()
 
