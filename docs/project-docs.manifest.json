@@ -203,7 +203,7 @@
   },
   "verification": {
     "status": "verified",
-    "lastVerifiedAt": "2026-06-11",
+    "lastVerifiedAt": "2026-06-18",
     "commands": [
       "pnpm --dir frontend verify:repo-guards"
     ],
@@ -212,8 +212,25 @@
       "pnpm --dir frontend verify:repo-guards passed on 2026-06-11: file-line, game-template, design-token, style-discipline, and lint checks were green."
     ]
   },
+  "startup_profile": {
+    "startup": "pnpm --dir frontend verify:repo-guards",
+    "build": null,
+    "test": null,
+    "lint": null,
+    "typecheck": null,
+    "clean": null
+  },
+  "consumers": [],
+  "shared_packages_exposed": [],
+  "docs_entrypoints": [
+    "AGENTS.md",
+    "README.md",
+    "INDEX.md",
+    "CHANGE.md",
+    "docs/HANDOFF.md"
+  ],
   "created": "2026-06-07",
-  "updated": "2026-06-11",
+  "updated": "2026-06-18",
   "writer": "Codex",
   "source": "user-authorized zero-context onboarding migration"
 }

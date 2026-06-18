@@ -72,7 +72,7 @@
 - ADR: not recorded
 - Changelog: `CHANGELOG.md`
 - Submit log: `docs/logs/submit`
-- Last verified: `2026-06-11`
-- Evidence: `Manifest v2 JSON and referenced-path validation passed on 2026-06-11.`, `pnpm --dir frontend verify:repo-guards passed on 2026-06-11: file-line, game-template, design-token, style-discipline, and lint checks were green.`
+- Last verified: `2026-06-18`
+- Evidence: `Manifest v2 JSON and referenced-path validation passed on 2026-06-11.`, `pnpm --dir frontend verify:repo-guards passed on 2026-06-11: file-line, game-template, design-token, style-discipline, and lint checks were green.` Refreshed on 2026-06-18 by stale-evidence-sweep.
 
 > Generated from `docs/project-docs.manifest.json`; edit the manifest, then regenerate this file.
