@@ -295,6 +295,10 @@ When debugging domain issues, treat this remote chain as the deployment context 
 3. Split backend services run on `127.0.0.1:8101-8108`
 4. Local `/socket.io/*` traffic goes to ASR Socket.IO on `127.0.0.1:5001`
 
+## Change Log
+
+The canonical change log lives at [`docs/state/CHANGELOG.md`](docs/state/CHANGELOG.md), with a Chinese mirror at [`docs/state/CHANGELOG.zh-CN.md`](docs/state/CHANGELOG.zh-CN.md). New entries must be appended there. The root-level [`CHANGE.md`](CHANGE.md) is a pointer file (per AR-BOOTSTRAP-002.1) and should not be hand-edited unless redirecting to a new canonical location.
+
 ## Browser APIs
 - `speechSynthesis`: pronunciation playback
 - `localStorage`: auth, settings, progress, quick-memory caches
