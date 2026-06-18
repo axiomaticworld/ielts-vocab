@@ -310,9 +310,8 @@ function ChapterModal({ book, progress, onClose, onSelectChapter, onFallback }: 
     const modeRecords = Object.values(progressRecord?.modes ?? {})
     const hasStarted = learnedCount > 0 || modeRecords.some(record => (record.correct_count ?? 0) + (record.wrong_count ?? 0) > 0)
     const hasModeData = modeRecords.length > 0
-    const allCompleted = hasModeData && modeRecords.every(record => record.is_completed)
     const isCoverageComplete = progressTotal > 0 && learnedCount >= progressTotal
-    const isCompleted = !!progressRecord?.is_completed || allCompleted || isCoverageComplete
+    const isCompleted = !!progressRecord?.is_completed || isCoverageComplete
     const chapterProgressPercent = isCompleted
       ? 100
       : progressTotal

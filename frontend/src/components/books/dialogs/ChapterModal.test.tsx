@@ -201,6 +201,42 @@ describe('ChapterModal', () => {
     expect(screen.queryByText('100%')).toBeNull()
   })
 
+  it('does not treat a completed test-mode slice as full chapter completion', async () => {
+    mockChapterResponses(
+      [{ id: 'chapter-a', title: 'A', word_count: 50 }],
+      {
+        'chapter-a': {
+          is_completed: false,
+          words_learned: 3,
+          accuracy: 100,
+          modes: {
+            test: {
+              mode: 'test',
+              correct_count: 3,
+              wrong_count: 0,
+              accuracy: 100,
+              is_completed: true,
+            },
+          },
+        },
+      },
+    )
+
+    render(
+      <ChapterModal
+        book={{ id: 'luo-test-book', title: 'luo测试模式', word_count: 50, is_custom_book: true }}
+        progress={{ current_index: 3 }}
+        onClose={() => {}}
+        onSelectChapter={() => {}}
+      />,
+    )
+
+    expect(await screen.findByRole('img', { name: '章节完成率 6%，模式正确率：测试模式 100%' })).toBeInTheDocument()
+    expect(screen.getByText('学习中')).toBeInTheDocument()
+    expect(screen.queryByText('已完成')).toBeNull()
+    expect(screen.queryByTitle('章节完成率 100%')).toBeNull()
+  })
+
   it('keeps server-completed chapters complete even when another mode is unfinished', async () => {
     mockChapterResponses(
       [{ id: 'wrong_words_1_a', title: 'A', word_count: 50 }],
