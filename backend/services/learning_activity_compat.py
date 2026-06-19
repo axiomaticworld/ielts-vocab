@@ -106,6 +106,56 @@ def _deserialize_word_list(raw_value) -> list[str]:
     return [str(item).strip() for item in parsed if str(item).strip()]
 
 
+def _chapter_word_total(*, user_id: int, book_id: str, chapter_id: str) -> int:
+    try:
+        from services.books_structure_service import get_book_chapter_word_count
+
+        return _safe_non_negative_int(
+            get_book_chapter_word_count(book_id, chapter_id, user_id=user_id)
+        )
+    except Exception:
+        return 0
+
+
+def _chapter_row_coverage(row: UserLearningChapterRollup) -> int:
+    answered_words = _deserialize_word_list(getattr(row, 'answered_words', None))
+    return max(
+        _safe_non_negative_int(getattr(row, 'words_learned', 0)),
+        _safe_non_negative_int(getattr(row, 'current_index', 0)),
+        len(answered_words),
+        _safe_non_negative_int(getattr(row, 'correct_count', 0))
+        + _safe_non_negative_int(getattr(row, 'wrong_count', 0)),
+    )
+
+
+def _collapsed_words_learned(
+    *,
+    user_id: int,
+    book_id: str,
+    chapter_id: str,
+    rows: list[UserLearningChapterRollup],
+) -> int:
+    words_learned = max(_chapter_row_coverage(row) for row in rows)
+    chapter_total = _chapter_word_total(user_id=user_id, book_id=book_id, chapter_id=chapter_id)
+    if chapter_total > 0:
+        return min(words_learned, chapter_total)
+    return words_learned
+
+
+def _collapsed_chapter_is_completed(
+    *,
+    user_id: int,
+    book_id: str,
+    chapter_id: str,
+    rows: list[UserLearningChapterRollup],
+    words_learned: int,
+) -> bool:
+    chapter_total = _chapter_word_total(user_id=user_id, book_id=book_id, chapter_id=chapter_id)
+    if chapter_total <= 0:
+        return any(bool(row.is_completed) for row in rows)
+    return words_learned >= chapter_total
+
+
 def _latest_instant(row) -> datetime | None:
     return getattr(row, 'last_activity_at', None) or getattr(row, 'updated_at', None)
 
@@ -152,14 +202,27 @@ def collapse_book_chapter_snapshots(rows: list[UserLearningChapterRollup]) -> li
     for (book_id, chapter_id), chapter_rows in by_chapter.items():
         latest_row = _latest_row(chapter_rows)
         latest_session_row = _latest_session_snapshot_row(chapter_rows) or latest_row
-        collapsed.append(CompatChapterProgress(
-            user_id=latest_row.user_id if latest_row else 0,
+        user_id = latest_row.user_id if latest_row else 0
+        words_learned = _collapsed_words_learned(
+            user_id=user_id,
             book_id=book_id,
             chapter_id=chapter_id,
-            words_learned=max(_safe_non_negative_int(row.words_learned) for row in chapter_rows),
+            rows=chapter_rows,
+        )
+        collapsed.append(CompatChapterProgress(
+            user_id=user_id,
+            book_id=book_id,
+            chapter_id=chapter_id,
+            words_learned=words_learned,
             correct_count=max(_safe_non_negative_int(row.correct_count) for row in chapter_rows),
             wrong_count=max(_safe_non_negative_int(row.wrong_count) for row in chapter_rows),
-            is_completed=any(bool(row.is_completed) for row in chapter_rows),
+            is_completed=_collapsed_chapter_is_completed(
+                user_id=user_id,
+                book_id=book_id,
+                chapter_id=chapter_id,
+                rows=chapter_rows,
+                words_learned=words_learned,
+            ),
             session_current_index=_safe_non_negative_int(getattr(latest_session_row, 'current_index', 0)),
             session_answered_words=getattr(latest_session_row, 'answered_words', None),
             session_queue_words=getattr(latest_session_row, 'queue_words', None),
@@ -201,10 +264,14 @@ def list_chapter_rollup_compat_rows(
     user_id: int,
     *,
     book_id: str | None = None,
+    mode: str | None = None,
 ) -> list[CompatChapterProgress]:
     query = UserLearningChapterRollup.query.filter_by(user_id=user_id)
     if book_id:
         query = query.filter_by(book_id=book_id)
+    normalized_mode = str(mode or '').strip()
+    if normalized_mode:
+        query = query.filter_by(mode=normalized_mode)
     return collapse_book_chapter_snapshots(query.all())
 
 

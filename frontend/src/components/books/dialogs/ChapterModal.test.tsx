@@ -46,7 +46,7 @@ vi.mock('../../ui/Scrollbar', () => ({
 
 function mockChapterResponses(chapters: unknown[], chapterProgress: Record<string, unknown> = {}) {
   apiFetchMock.mockImplementation((url: unknown) => Promise.resolve(
-    typeof url === 'string' && url.endsWith('/chapters/progress')
+    typeof url === 'string' && url.split('?')[0].endsWith('/chapters/progress')
       ? { chapter_progress: chapterProgress }
       : { chapters },
   ))
@@ -224,7 +224,13 @@ describe('ChapterModal', () => {
 
     render(
       <ChapterModal
-        book={{ id: 'luo-test-book', title: 'luo测试模式', word_count: 50, is_custom_book: true }}
+        book={{
+          id: 'luo-test-book',
+          title: 'luo测试模式',
+          word_count: 50,
+          is_custom_book: true,
+          practice_mode: 'test',
+        }}
         progress={{ current_index: 3 }}
         onClose={() => {}}
         onSelectChapter={() => {}}
@@ -232,6 +238,7 @@ describe('ChapterModal', () => {
     )
 
     expect(await screen.findByRole('img', { name: '章节完成率 6%，模式正确率：测试模式 100%' })).toBeInTheDocument()
+    expect(apiFetchMock).toHaveBeenCalledWith('/api/books/luo-test-book/chapters/progress?mode=test')
     expect(screen.getByText('学习中')).toBeInTheDocument()
     expect(screen.queryByText('已完成')).toBeNull()
     expect(screen.queryByTitle('章节完成率 100%')).toBeNull()

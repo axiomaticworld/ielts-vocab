@@ -194,6 +194,9 @@ function ChapterModal({ book, progress, onClose, onSelectChapter, onFallback }: 
   const currentIndex = progress?.current_index || 0
   const isConfusableBook = String(book.id) === 'ielts_confusable_match'
   const isCustomBook = !!book.is_custom_book && !isConfusableBook
+  const progressModeQuery = book.practice_mode
+    ? `?mode=${encodeURIComponent(book.practice_mode)}`
+    : ''
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
@@ -213,7 +216,7 @@ function ChapterModal({ book, progress, onClose, onSelectChapter, onFallback }: 
         if (user) {
           try {
             const progressData = await apiFetch<{ chapter_progress?: Record<string | number, ChapterProgress> }>(
-              `/api/books/${book.id}/chapters/progress`,
+              `/api/books/${book.id}/chapters/progress${progressModeQuery}`,
             )
             setChapterProgress(progressData.chapter_progress || {})
           } catch {
@@ -229,7 +232,7 @@ function ChapterModal({ book, progress, onClose, onSelectChapter, onFallback }: 
     }
 
     fetchData()
-  }, [book.id, onFallback, user])
+  }, [book.id, onFallback, progressModeQuery, user])
 
   const currentChapterId = useMemo((): string | number | null => {
     if (!chapters.length || currentIndex === 0) return null

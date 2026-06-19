@@ -58,3 +58,32 @@ class TestChapterModeProgress:
             ).all()
             assert len(ledgers) == 1
             assert UserChapterModeProgress.query.count() == 0
+
+    def test_completed_mode_slice_does_not_complete_whole_chapter(self, client):
+        _register_user(client, username='mode-slice-not-chapter-complete')
+
+        completed_other_mode = client.post('/api/books/ielts_listening_premium/chapters/1/progress', json={
+            'mode': 'quickmemory',
+            'current_index': 50,
+            'words_learned': 50,
+            'correct_count': 50,
+            'wrong_count': 0,
+            'is_completed': True,
+        })
+        mode_response = client.post('/api/books/ielts_listening_premium/chapters/1/mode-progress', json={
+            'mode': 'test',
+            'correct_count': 1,
+            'wrong_count': 0,
+            'is_completed': True,
+        })
+        progress_response = client.get('/api/books/ielts_listening_premium/chapters/progress?mode=test')
+
+        assert completed_other_mode.status_code == 200
+        assert mode_response.status_code == 200
+        assert mode_response.get_json()['mode_progress']['is_completed'] is True
+        assert progress_response.status_code == 200
+        chapter = progress_response.get_json()['chapter_progress']['1']
+        assert chapter['words_learned'] == 1
+        assert chapter['is_completed'] is False
+        assert chapter['modes']['quickmemory']['is_completed'] is True
+        assert chapter['modes']['test']['is_completed'] is True
