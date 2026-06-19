@@ -117,14 +117,23 @@ def _chapter_word_total(*, user_id: int, book_id: str, chapter_id: str) -> int:
         return 0
 
 
-def _chapter_row_coverage(row: UserLearningChapterRollup) -> int:
+def _chapter_row_coverage(
+    row: UserLearningChapterRollup,
+    *,
+    prefer_answered_attempts: bool = False,
+) -> int:
     answered_words = _deserialize_word_list(getattr(row, 'answered_words', None))
-    return max(
-        _safe_non_negative_int(getattr(row, 'words_learned', 0)),
-        _safe_non_negative_int(getattr(row, 'current_index', 0)),
+    attempt_count = max(
         len(answered_words),
         _safe_non_negative_int(getattr(row, 'correct_count', 0))
         + _safe_non_negative_int(getattr(row, 'wrong_count', 0)),
+    )
+    if prefer_answered_attempts and attempt_count > 0:
+        return attempt_count
+    return max(
+        _safe_non_negative_int(getattr(row, 'words_learned', 0)),
+        _safe_non_negative_int(getattr(row, 'current_index', 0)),
+        attempt_count,
     )
 
 
@@ -136,7 +145,13 @@ def _collapsed_words_learned(
     rows: list[UserLearningChapterRollup],
     require_full_chapter_completion: bool,
 ) -> int:
-    words_learned = max(_chapter_row_coverage(row) for row in rows)
+    words_learned = max(
+        _chapter_row_coverage(
+            row,
+            prefer_answered_attempts=require_full_chapter_completion,
+        )
+        for row in rows
+    )
     if not require_full_chapter_completion:
         return words_learned
     chapter_total = _chapter_word_total(user_id=user_id, book_id=book_id, chapter_id=chapter_id)

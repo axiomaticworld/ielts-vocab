@@ -1,4 +1,4 @@
-from models import UserChapterModeProgress, UserLearningChapterRollup, UserLearningDailyLedger
+from models import db, UserChapterModeProgress, UserLearningChapterRollup, UserLearningDailyLedger
 
 
 def _register_user(client, username='library-user'):
@@ -59,7 +59,7 @@ class TestChapterModeProgress:
             assert len(ledgers) == 1
             assert UserChapterModeProgress.query.count() == 0
 
-    def test_completed_mode_slice_does_not_complete_whole_chapter(self, client):
+    def test_completed_mode_slice_does_not_complete_whole_chapter(self, client, app):
         _register_user(client, username='mode-slice-not-chapter-complete')
 
         completed_other_mode = client.post('/api/books/ielts_listening_premium/chapters/1/progress', json={
@@ -76,11 +76,21 @@ class TestChapterModeProgress:
             'wrong_count': 0,
             'is_completed': True,
         })
-        progress_response = client.get('/api/books/ielts_listening_premium/chapters/progress?mode=test')
 
         assert completed_other_mode.status_code == 200
         assert mode_response.status_code == 200
         assert mode_response.get_json()['mode_progress']['is_completed'] is True
+        with app.app_context():
+            stale_mode_row = UserLearningChapterRollup.query.filter_by(
+                book_id='ielts_listening_premium',
+                chapter_id='1',
+                mode='test',
+            ).one()
+            stale_mode_row.words_learned = 50
+            stale_mode_row.current_index = 50
+            db.session.commit()
+
+        progress_response = client.get('/api/books/ielts_listening_premium/chapters/progress?mode=test')
         assert progress_response.status_code == 200
         chapter = progress_response.get_json()['chapter_progress']['1']
         assert chapter['words_learned'] == 1
