@@ -134,8 +134,11 @@ def _collapsed_words_learned(
     book_id: str,
     chapter_id: str,
     rows: list[UserLearningChapterRollup],
+    require_full_chapter_completion: bool,
 ) -> int:
     words_learned = max(_chapter_row_coverage(row) for row in rows)
+    if not require_full_chapter_completion:
+        return words_learned
     chapter_total = _chapter_word_total(user_id=user_id, book_id=book_id, chapter_id=chapter_id)
     if chapter_total > 0:
         return min(words_learned, chapter_total)
@@ -149,7 +152,10 @@ def _collapsed_chapter_is_completed(
     chapter_id: str,
     rows: list[UserLearningChapterRollup],
     words_learned: int,
+    require_full_chapter_completion: bool,
 ) -> bool:
+    if not require_full_chapter_completion:
+        return any(bool(row.is_completed) for row in rows)
     chapter_total = _chapter_word_total(user_id=user_id, book_id=book_id, chapter_id=chapter_id)
     if chapter_total <= 0:
         return any(bool(row.is_completed) for row in rows)
@@ -193,7 +199,11 @@ def _max_datetime(values) -> datetime | None:
     return max(candidates) if candidates else None
 
 
-def collapse_book_chapter_snapshots(rows: list[UserLearningChapterRollup]) -> list[CompatChapterProgress]:
+def collapse_book_chapter_snapshots(
+    rows: list[UserLearningChapterRollup],
+    *,
+    require_full_chapter_completion: bool = False,
+) -> list[CompatChapterProgress]:
     by_chapter: dict[tuple[str, str], list[UserLearningChapterRollup]] = {}
     for row in rows:
         by_chapter.setdefault((row.book_id, row.chapter_id), []).append(row)
@@ -208,6 +218,7 @@ def collapse_book_chapter_snapshots(rows: list[UserLearningChapterRollup]) -> li
             book_id=book_id,
             chapter_id=chapter_id,
             rows=chapter_rows,
+            require_full_chapter_completion=require_full_chapter_completion,
         )
         collapsed.append(CompatChapterProgress(
             user_id=user_id,
@@ -222,6 +233,7 @@ def collapse_book_chapter_snapshots(rows: list[UserLearningChapterRollup]) -> li
                 chapter_id=chapter_id,
                 rows=chapter_rows,
                 words_learned=words_learned,
+                require_full_chapter_completion=require_full_chapter_completion,
             ),
             session_current_index=_safe_non_negative_int(getattr(latest_session_row, 'current_index', 0)),
             session_answered_words=getattr(latest_session_row, 'answered_words', None),
@@ -272,7 +284,10 @@ def list_chapter_rollup_compat_rows(
     normalized_mode = str(mode or '').strip()
     if normalized_mode:
         query = query.filter_by(mode=normalized_mode)
-    return collapse_book_chapter_snapshots(query.all())
+    return collapse_book_chapter_snapshots(
+        query.all(),
+        require_full_chapter_completion=bool(normalized_mode),
+    )
 
 
 def get_chapter_rollup_compat_row(
