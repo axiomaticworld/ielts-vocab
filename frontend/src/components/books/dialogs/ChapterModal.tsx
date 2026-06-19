@@ -66,6 +66,34 @@ interface ChapterModalProps {
   onFallback?: () => void
 }
 
+const CHAPTER_PROGRESS_MODES = new Set([
+  'smart',
+  'listening',
+  'meaning',
+  'dictation',
+  'follow',
+  'radio',
+  'quickmemory',
+  'test',
+])
+
+function resolveCurrentPracticeMode(): string {
+  const currentWindowMode = typeof window !== 'undefined'
+    ? (window as Window & { __currentMode?: string }).__currentMode
+    : ''
+  const storedMode = typeof window !== 'undefined'
+    ? window.localStorage.getItem('current_mode')
+    : ''
+  const mode = String(currentWindowMode || storedMode || '').trim()
+  return CHAPTER_PROGRESS_MODES.has(mode) ? mode : ''
+}
+
+function resolveChapterProgressMode(book: Book): string {
+  const explicitMode = String(book.practice_mode || '').trim()
+  if (explicitMode) return explicitMode
+  return resolveCurrentPracticeMode()
+}
+
 interface SectionGroup {
   label: string
   isMultiPart: boolean
@@ -194,8 +222,9 @@ function ChapterModal({ book, progress, onClose, onSelectChapter, onFallback }: 
   const currentIndex = progress?.current_index || 0
   const isConfusableBook = String(book.id) === 'ielts_confusable_match'
   const isCustomBook = !!book.is_custom_book && !isConfusableBook
-  const progressModeQuery = book.practice_mode
-    ? `?mode=${encodeURIComponent(book.practice_mode)}`
+  const chapterProgressMode = resolveChapterProgressMode(book)
+  const progressModeQuery = chapterProgressMode
+    ? `?mode=${encodeURIComponent(chapterProgressMode)}`
     : ''
 
   useEffect(() => {

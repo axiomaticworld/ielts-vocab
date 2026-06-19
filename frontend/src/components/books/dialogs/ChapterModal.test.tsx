@@ -67,6 +67,8 @@ describe('ChapterModal', () => {
 
     apiFetchMock.mockReset()
     navigateMock.mockReset()
+    window.localStorage.clear()
+    delete (window as Window & { __currentMode?: string }).__currentMode
   })
 
   it('prioritizes chapter completion and vertical mode accuracy comparison', async () => {
@@ -242,6 +244,47 @@ describe('ChapterModal', () => {
     expect(screen.getByText('学习中')).toBeInTheDocument()
     expect(screen.queryByText('已完成')).toBeNull()
     expect(screen.queryByTitle('章节完成率 100%')).toBeNull()
+  })
+
+  it('uses the current practice mode for ordinary book chapter progress', async () => {
+    window.localStorage.setItem('current_mode', 'test')
+    mockChapterResponses(
+      [{ id: 'chapter-a', title: 'A', word_count: 50 }],
+      {
+        'chapter-a': {
+          is_completed: false,
+          words_learned: 1,
+          accuracy: 100,
+          modes: {
+            test: {
+              mode: 'test',
+              correct_count: 1,
+              wrong_count: 0,
+              accuracy: 100,
+              is_completed: false,
+            },
+          },
+        },
+      },
+    )
+
+    render(
+      <ChapterModal
+        book={{
+          id: 'ielts-listening-book',
+          title: '听力词书',
+          word_count: 50,
+        }}
+        progress={{ current_index: 1 }}
+        onClose={() => {}}
+        onSelectChapter={() => {}}
+      />,
+    )
+
+    expect(await screen.findByRole('img', { name: '章节完成率 2%，模式正确率：测试模式 100%' })).toBeInTheDocument()
+    expect(apiFetchMock).toHaveBeenCalledWith('/api/books/ielts-listening-book/chapters/progress?mode=test')
+    expect(screen.getByText('学习中')).toBeInTheDocument()
+    expect(screen.queryByText('已完成')).toBeNull()
   })
 
   it('keeps server-completed chapters complete even when another mode is unfinished', async () => {
