@@ -29,7 +29,6 @@ const TEST_AUTO_UNKNOWN_AFTER_MS = 4000
 const QUICK_MEMORY_PLAYBACK_OPTIONS = { sourcePreference: 'generated' as const }
 const QUICK_MEMORY_PRELOAD_OPTIONS = { includeBuffer: true, sourcePreference: 'buffer' as const }
 type RevealOptions = { countAsActivity?: boolean; shouldPlayRevealAudio?: boolean; isFuzzy?: boolean }
-
 function syncRecordToBackend(
   word: string,
   record: QuickMemoryRecordState,
@@ -41,7 +40,6 @@ function syncRecordToBackend(
     { ...scope, sourceMode: modeVariant },
   ).catch(() => {})
 }
-
 export default function QuickMemoryMode({
   vocabulary,
   queue,
@@ -97,7 +95,6 @@ export default function QuickMemoryMode({
     showToast('进度保存失败，请检查网络连接', 'error')
   }, [showToast])
   wordRef.current = currentWord
-
   const {
     completedSessionDurationSecondsRef,
     flushPendingRecordSync,
@@ -105,7 +102,7 @@ export default function QuickMemoryMode({
     prepareLearningSession,
     resetCurrentSessionSegment,
     resultsRef,
-    sessionLoggedRef,
+    sessionLoggedRef, sessionStartRef,
     syncSessionSnapshot,
   } = useQuickMemoryModeRuntime({
     modeVariant,
@@ -123,7 +120,6 @@ export default function QuickMemoryMode({
     showSaveError: showProgressSaveError,
     onCompletedSessionDurationChange: setCompletedSessionDurationSeconds,
   })
-
   const clearQuestionTimers = useCallback(() => {
     clearInterval(timerRef.current)
     clearTimeout(hideKnownTimerRef.current)
@@ -321,6 +317,10 @@ export default function QuickMemoryMode({
     clearQuestionTimers()
     const next = index + 1
     if (next >= queue.length) {
+      if (sessionStartRef.current > 0) {
+        const elapsedSeconds = Math.max(0, Math.round((Date.now() - sessionStartRef.current) / 1000))
+        setCompletedSessionDurationSeconds((completedSessionDurationSecondsRef.current ?? 0) + elapsedSeconds)
+      }
       setDone(true)
       return
     }
@@ -332,7 +332,7 @@ export default function QuickMemoryMode({
     setQuestionReady(!isTestMode)
     setKnownChoiceAvailable(true)
     setRevealWasFuzzy(false)
-  }, [clearQuestionTimers, index, isTestMode, onIndexChange, prepareLearningSession, queue.length])
+  }, [clearQuestionTimers, completedSessionDurationSecondsRef, index, isTestMode, onIndexChange, prepareLearningSession, queue.length, sessionStartRef])
 
   const handlePrev = useCallback(async () => {
     if (index === 0) return
@@ -452,6 +452,7 @@ export default function QuickMemoryMode({
         reviewHasMore={reviewHasMore}
         onContinueReview={onContinueReview ? handleContinueReview : undefined}
         chapterGroup={chapterGroup}
+        chapterTotalCount={chapterQueueWords?.length}
         onContinueChapterGroup={onContinueChapterGroup}
         buildChapterPath={buildChapterPath}
         sessionDurationSeconds={completedSessionDurationSeconds}
