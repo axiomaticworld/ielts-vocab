@@ -72,6 +72,29 @@ def resolve_session_activity_capped_end(
     return max(started_at, capped_end)
 
 
+def resolve_session_activity_duration_seconds(
+    *,
+    started_at: datetime | None,
+    candidate_end: datetime | None,
+    activity_times: list[datetime] | tuple[datetime, ...],
+) -> int | None:
+    """Sum the bounded activity windows instead of bridging idle gaps."""
+    if started_at is None or candidate_end is None or candidate_end <= started_at:
+        return None
+
+    windows: list[tuple[datetime, datetime]] = []
+    for activity_at in sorted({started_at, *activity_times}):
+        if activity_at < started_at or activity_at > candidate_end:
+            continue
+        window_end = min(candidate_end, activity_at + _STUDY_SESSION_IDLE_GRACE)
+        if windows and activity_at <= windows[-1][1]:
+            windows[-1] = (windows[-1][0], max(windows[-1][1], window_end))
+        else:
+            windows.append((activity_at, window_end))
+
+    return sum(int((end - start).total_seconds()) for start, end in windows)
+
+
 def get_session_window_metrics(
     session: UserStudySession,
     *,

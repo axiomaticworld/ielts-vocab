@@ -128,4 +128,31 @@ describe('study session idle duration cap', () => {
     expect(body.endedAt).toBe(activityAt + 2 * 60 * 1000)
     expect(body.durationCappedByActivity).toBe(true)
   })
+
+  it('does not refresh the idle cap from passive mouse movement', async () => {
+    const mockFetch = vi.fn(() =>
+      Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 })),
+    )
+    vi.stubGlobal('fetch', mockFetch)
+    writeActiveSession(604)
+
+    window.dispatchEvent(new MouseEvent('mousemove'))
+
+    await logSession({
+      sessionId: 604,
+      mode: 'quickmemory',
+      bookId: 'ielts_listening_premium',
+      chapterId: '55',
+      wordsStudied: 1,
+      correctCount: 0,
+      wrongCount: 1,
+      durationSeconds: Math.round((Date.now() - STARTED_AT) / 1000),
+      startedAt: STARTED_AT,
+    })
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string)
+    expect(body.durationSeconds).toBe(EXPECTED_DURATION_SECONDS)
+    expect(body.endedAt).toBe(EXPECTED_ENDED_AT)
+    expect(body.durationCappedByActivity).toBe(true)
+  })
 })

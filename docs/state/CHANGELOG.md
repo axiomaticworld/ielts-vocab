@@ -4,6 +4,10 @@ All notable product, runtime, and operational changes are recorded here.
 
 ## [Unreleased]
 
+### Fixed
+- Capped study-session settlement by summing bounded server-side activity windows, so long idle gaps between learning events no longer inflate completion time.
+- Stopped passive mouse movement from extending the client-side study-session activity timer.
+
 ### Documentation
 - Migrated `docs/project-docs.manifest.json` to the version 2 zero-context onboarding contract with real entrypoints, commands, environment metadata, workspace contracts, current work, troubleshooting, decisions, ownership, and dated verification evidence.
 - Added zero-context handoff governance to `TODO.md`, including the completed migration and the ongoing freshness contract.

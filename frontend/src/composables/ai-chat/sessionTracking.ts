@@ -38,7 +38,7 @@ export {
   STUDY_SESSION_IDLE_GRACE_MS,
 }
 
-const ACTIVITY_EVENT_NAMES = ['pointerdown', 'mousemove', 'keydown', 'touchstart'] as const
+const ACTIVITY_EVENT_NAMES = ['pointerdown', 'keydown', 'touchstart'] as const
 const ACTIVITY_WRITE_THROTTLE_MS = 1000
 
 let activityTrackingInstalled = false
