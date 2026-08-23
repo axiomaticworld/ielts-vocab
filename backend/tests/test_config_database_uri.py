@@ -56,6 +56,12 @@ def _clear_database_env(monkeypatch):
         'NOTES_SERVICE_SQLALCHEMY_MAX_OVERFLOW',
         'NOTES_SERVICE_SQLALCHEMY_POOL_TIMEOUT_SECONDS',
         'NOTES_SERVICE_SQLALCHEMY_POOL_RECYCLE_SECONDS',
+        'APP_ENV',
+        'FLASK_ENV',
+        'ENV',
+        'COOKIE_SECURE',
+        'CORS_ORIGINS',
+        'CORS_INCLUDE_LOCAL_DEV_ORIGINS',
         'ALLOW_SHARED_SPLIT_SERVICE_SQLITE_SERVICES',
         'ALLOW_SHARED_SPLIT_SERVICE_SQLITE',
     ):
@@ -223,3 +229,37 @@ def test_service_scoped_postgres_pool_env_overrides_default_small_pool(monkeypat
         'pool_timeout': 9,
         'pool_recycle': 90,
     }
+
+
+def test_secure_runtime_cors_defaults_exclude_local_dev_origins(monkeypatch):
+    _clear_database_env(monkeypatch)
+    monkeypatch.setenv('COOKIE_SECURE', 'true')
+    monkeypatch.setenv('CORS_ORIGINS', 'https://axiomaticworld.com')
+
+    config = _reload_config(monkeypatch)
+
+    assert config.Config.CORS_ORIGINS == [
+        'https://axiomaticworld.com',
+        'https://www.axiomaticworld.com',
+    ]
+    assert all('localhost' not in origin for origin in config.Config.CORS_ORIGINS)
+    assert all('127.0.0.1' not in origin for origin in config.Config.CORS_ORIGINS)
+
+
+def test_development_cors_defaults_keep_local_preview_origins(monkeypatch):
+    _clear_database_env(monkeypatch)
+
+    config = _reload_config(monkeypatch)
+
+    assert 'https://axiomaticworld.com' in config.Config.CORS_ORIGINS
+    assert 'http://127.0.0.1:3002' in config.Config.CORS_ORIGINS
+    assert 'http://localhost:5173' in config.Config.CORS_ORIGINS
+
+
+def test_secure_runtime_rejects_wildcard_cors(monkeypatch):
+    _clear_database_env(monkeypatch)
+    monkeypatch.setenv('COOKIE_SECURE', 'true')
+    monkeypatch.setenv('CORS_ORIGINS', '*')
+
+    with pytest.raises(ValueError, match=r'CORS_ORIGINS=\*'):
+        _reload_config(monkeypatch)
