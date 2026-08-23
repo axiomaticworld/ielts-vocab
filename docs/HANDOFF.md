@@ -11,8 +11,6 @@
 1. `AGENTS.md`
 2. `README.md`
 3. `INDEX.md`
-4. `PRD.md`
-5. `TDD.md`
 
 ## Entrypoints
 
@@ -51,8 +49,8 @@
 
 ## Current Work
 
-- TODO: `TODO.md`
-- Milestone: `MILESTONE.md`
+- TODO: `backend/TODO.md`
+- Milestone: `docs/project-audit-2026-03-31.md`
 - Active: Keep the deployed split backend stable.
 - Active: Complete final remote release, preflight, smoke, bounded storage drill, and closeout documentation.
 - Known failure: Final remote release and bounded storage drill remain outstanding.
@@ -70,9 +68,9 @@
 ## Decisions And Freshness
 
 - ADR: not recorded
-- Changelog: `CHANGELOG.md`
+- Changelog: `docs/state/CHANGELOG.md`
 - Submit log: `docs/logs/submit`
-- Last verified: `2026-06-18`
-- Evidence: `Manifest v2 JSON and referenced-path validation passed on 2026-06-11.`, `pnpm --dir frontend verify:repo-guards passed on 2026-06-11: file-line, game-template, design-token, style-discipline, and lint checks were green.` Refreshed on 2026-06-18 by stale-evidence-sweep.
+- Last verified: `2026-08-23`
+- Evidence: `Manifest v2 path-fix-up applied on 2026-08-23: PRD.md, TDD.md, root TODO.md, root MILESTONE.md do not exist on disk and were removed from readOrder / currentWork; backend/TODO.md and docs/project-audit-2026-03-31.md used as live anchors.`, `Full `pnpm --dir frontend verify:repo-guards` was not re-run this session; owner must re-run to confirm frontend verification still passes.`
 
 > Generated from `docs/project-docs.manifest.json`; edit the manifest, then regenerate this file.

@@ -11,9 +11,7 @@
   "readOrder": [
     "AGENTS.md",
     "README.md",
-    "INDEX.md",
-    "PRD.md",
-    "TDD.md"
+    "INDEX.md"
   ],
   "entrypoints": [
     {
@@ -143,8 +141,8 @@
     ]
   },
   "currentWork": {
-    "todo": "TODO.md",
-    "milestone": "MILESTONE.md",
+    "todo": "backend/TODO.md",
+    "milestone": "docs/project-audit-2026-03-31.md",
     "active": [
       "Keep the deployed split backend stable.",
       "Complete final remote release, preflight, smoke, bounded storage drill, and closeout documentation."
@@ -203,13 +201,13 @@
   },
   "verification": {
     "status": "verified",
-    "lastVerifiedAt": "2026-06-18",
+    "lastVerifiedAt": "2026-08-23",
     "commands": [
       "pnpm --dir frontend verify:repo-guards"
     ],
     "evidence": [
-      "Manifest v2 JSON and referenced-path validation passed on 2026-06-11.",
-      "pnpm --dir frontend verify:repo-guards passed on 2026-06-11: file-line, game-template, design-token, style-discipline, and lint checks were green."
+      "Manifest v2 path-fix-up applied on 2026-08-23: PRD.md, TDD.md, root TODO.md, root MILESTONE.md do not exist on disk and were removed from readOrder / currentWork; backend/TODO.md and docs/project-audit-2026-03-31.md used as live anchors.",
+      "Full `pnpm --dir frontend verify:repo-guards` was not re-run this session; owner must re-run to confirm frontend verification still passes."
     ]
   },
   "startup_profile": {
